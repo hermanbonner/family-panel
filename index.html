@@ -13,7 +13,7 @@
       height: 100vh;
       overflow: hidden;
       display: grid;
-      grid-template-columns: 2.1fr 0.9fr;   /* Right column is now slimmer */
+      grid-template-columns: 2.1fr 0.9fr;
       gap: 14px;
       padding: 14px;
     }
@@ -295,7 +295,7 @@
     setInterval(updateDateTime, 1000);
     updateDateTime();
 
-    // ===== WEATHER (with wind in forecast) =====
+    // ===== WEATHER (wind in m/s) =====
     async function loadWeather() {
       try {
         const res = await fetch(
@@ -309,7 +309,7 @@
 
         const temp = Math.round(data.current.temperature_2m);
         const feels = Math.round(data.current.apparent_temperature);
-        const wind = Math.round(data.current.wind_speed_10m);
+        const wind = (data.current.wind_speed_10m / 3.6).toFixed(1); // m/s
         const humidity = data.current.relative_humidity_2m;
         const code = data.current.weather_code;
 
@@ -334,7 +334,7 @@
           const dayName = days[d.getDay()];
           const max = Math.round(data.daily.temperature_2m_max[i]);
           const min = Math.round(data.daily.temperature_2m_min[i]);
-          const windMax = Math.round(data.daily.wind_speed_10m_max[i]);
+          const windMax = (data.daily.wind_speed_10m_max[i] / 3.6).toFixed(1); // m/s
           const dayInfo = weatherMap[data.daily.weather_code[i]] || { icon: "🌡️", desc: "" };
 
           forecast += `
@@ -344,7 +344,7 @@
               <span style="flex:1;opacity:0.8;padding-left:4px;font-size:0.88rem;">${dayInfo.desc}</span>
               <span style="text-align:right;line-height:1.3;">
                 ${min}°/${max}°<br>
-                <span style="opacity:0.7;font-size:0.82rem;">${windMax} km/h</span>
+                <span style="opacity:0.7;font-size:0.82rem;">${windMax} m/s</span>
               </span>
             </div>`;
         }
@@ -353,7 +353,7 @@
           <div class="temp">${temp}°</div>
           <div class="desc">${current.icon} ${current.desc}</div>
           <div style="margin-top:10px;font-size:0.95rem;opacity:0.85;line-height:1.45;">
-            Feels ${feels}° · Wind ${wind} km/h<br>Humidity ${humidity}%
+            Feels ${feels}° · Wind ${wind} m/s<br>Humidity ${humidity}%
           </div>
           <div style="margin-top:12px;">${forecast}</div>
         `;
@@ -408,14 +408,20 @@
         const now = new Date();
         const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const today1 = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-        const tom1 = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
+        const tom1  = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
 
         const todaySchool = school.filter(e => e.start >= today0 && e.start < today1).sort((a,b) => a.start - b.start);
         const todaySoccer = soccer.filter(e => e.start >= today0 && e.start < today1).sort((a,b) => a.start - b.start);
-        const tomSchool = school.filter(e => e.start >= today1 && e.start < tom1).sort((a,b) => a.start - b.start);
+
+        // Combined tomorrow events (earliest from school OR soccer)
+        const tomorrowEvents = [
+          ...school.filter(e => e.start >= today1 && e.start < tom1),
+          ...soccer.filter(e => e.start >= today1 && e.start < tom1)
+        ].sort((a, b) => a.start - b.start);
 
         let html = '';
 
+        // School
         html += `<div class="section-header">School</div>`;
         if (todaySchool.length === 0) {
           html += `<div class="note">No more school today</div>`;
@@ -430,6 +436,7 @@
           });
         }
 
+        // Soccer
         html += `<div class="section-header">Soccer</div>`;
         if (todaySoccer.length === 0) {
           html += `<div class="note">No soccer today</div>`;
@@ -444,11 +451,12 @@
           });
         }
 
+        // First Thing Tomorrow
         html += `<div class="section-header">First Thing Tomorrow</div>`;
-        if (tomSchool.length === 0) {
-          html += `<div class="note">No School</div>`;
+        if (tomorrowEvents.length === 0) {
+          html += `<div class="note">No activities scheduled.</div>`;
         } else {
-          const e = tomSchool[0];
+          const e = tomorrowEvents[0];
           const t = e.end ? `${fmt(e.start)} – ${fmt(e.end)}` : fmt(e.start);
           html += `<div class="event-item">
             <div class="event-time">${t}</div>
