@@ -98,13 +98,10 @@
   </div>
 
   <div class="calendars">
-    <!-- Calendar 1 - Replace the src with your Google Calendar embed URL -->
     <div class="calendar-box">
       <h2>Herman's Calendar</h2>
       <iframe src="https://calendar.google.com/calendar/embed?src=YOUR_CALENDAR_1_ID%40group.calendar.google.com&ctz=Europe%2FHelsinki&mode=AGENDA&showTitle=0&showNav=0&showDate=0&showPrint=0&showTabs=0&showCalendars=0&showTz=0"></iframe>
     </div>
-
-    <!-- Calendar 2 - Replace the src with your second Google Calendar embed URL -->
     <div class="calendar-box">
       <h2>Family Calendar</h2>
       <iframe src="https://calendar.google.com/calendar/embed?src=YOUR_CALENDAR_2_ID%40group.calendar.google.com&ctz=Europe%2FHelsinki&mode=AGENDA&showTitle=0&showNav=0&showDate=0&showPrint=0&showTabs=0&showCalendars=0&showTz=0"></iframe>
@@ -129,7 +126,7 @@
   </div>
 
   <script>
-    // Live clock
+    // Clock
     function updateClock() {
       const now = new Date();
       document.getElementById('clock').textContent = now.toLocaleTimeString('fi-FI', {
@@ -139,7 +136,7 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // Weather (Open-Meteo – free, no key needed)
+    // Weather
     async function loadWeather() {
       try {
         const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=60.17&longitude=24.94&current=temperature_2m,weather_code&timezone=Europe%2FHelsinki');
@@ -164,7 +161,7 @@
     loadWeather();
     setInterval(loadWeather, 10 * 60 * 1000);
 
-    // HSL Departures – Rudolfintie (HSL:1491113)
+    // HSL Departures – FIXED version
     async function loadDepartures() {
       const container = document.getElementById('departures');
       const API_KEY = 'fb7596a828844a87933c2229abb55c31';
@@ -174,9 +171,10 @@
         stop(id: "HSL:1491113") {
           name
           stoptimesWithoutPatterns(numberOfDepartures: 8) {
+            realtime
             realtimeDeparture
             scheduledDeparture
-            realtime
+            serviceDay
             headsign
             trip {
               route {
@@ -198,6 +196,13 @@
         });
 
         const json = await res.json();
+        
+        if (json.errors) {
+          console.error(json.errors);
+          container.innerHTML = '<div class="note">API Error – check console</div>';
+          return;
+        }
+
         const stoptimes = json.data?.stop?.stoptimesWithoutPatterns || [];
 
         if (stoptimes.length === 0) {
@@ -209,8 +214,10 @@
         const now = Math.floor(Date.now() / 1000);
 
         stoptimes.forEach(st => {
-          const departure = st.realtime ? st.realtimeDeparture : st.scheduledDeparture;
-          const minutes = Math.round((departure - (now % 86400)) / 60);
+          // Correct calculation: serviceDay + seconds since midnight
+          const departureSeconds = st.realtime ? st.realtimeDeparture : st.scheduledDeparture;
+          const absoluteTime = st.serviceDay + departureSeconds;
+          const minutes = Math.round((absoluteTime - now) / 60);
 
           let timeText;
           if (minutes <= 0) timeText = 'Now';
