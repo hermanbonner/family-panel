@@ -80,11 +80,11 @@
     }
     .line {
       font-weight: 700;
-      min-width: 40px;
+      min-width: 42px;
       color: #4fc3f7;
     }
     .note {
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       opacity: 0.6;
       padding: 12px;
       text-align: center;
@@ -98,18 +98,16 @@
   </div>
 
   <div class="calendars">
-    <!-- Calendar 1 – replace the src with your own embed code -->
+    <!-- Calendar 1 - Replace the src with your Google Calendar embed URL -->
     <div class="calendar-box">
       <h2>Herman's Calendar</h2>
-      <iframe src="https://calendar.google.com/calendar/embed?src=47gh6e1c46g9etusg1vqku57fdmi0rih@import.calendar.google.com
-%40group.calendar.google.com&ctz=Europe%2FHelsinki&mode=AGENDA&showTitle=0&showNav=0&showDate=0&showPrint=0&showTabs=0&showCalendars=0&showTz=0&height=400"></iframe>
+      <iframe src="https://calendar.google.com/calendar/embed?src=YOUR_CALENDAR_1_ID%40group.calendar.google.com&ctz=Europe%2FHelsinki&mode=AGENDA&showTitle=0&showNav=0&showDate=0&showPrint=0&showTabs=0&showCalendars=0&showTz=0"></iframe>
     </div>
 
-    <!-- Calendar 2 – replace the src with your second calendar -->
+    <!-- Calendar 2 - Replace the src with your second Google Calendar embed URL -->
     <div class="calendar-box">
-      <h2>Family / Second Calendar</h2>
-      <iframe src="https://calendar.google.com/calendar/embed?src=47gh6e1c46g9etusg1vqku57fdmi0rih@import.calendar.google.com
-%40group.calendar.google.com&ctz=Europe%2FHelsinki&mode=AGENDA&showTitle=0&showNav=0&showDate=0&showPrint=0&showTabs=0&showCalendars=0&showTz=0&height=400"></iframe>
+      <h2>Family Calendar</h2>
+      <iframe src="https://calendar.google.com/calendar/embed?src=YOUR_CALENDAR_2_ID%40group.calendar.google.com&ctz=Europe%2FHelsinki&mode=AGENDA&showTitle=0&showNav=0&showDate=0&showPrint=0&showTabs=0&showCalendars=0&showTz=0"></iframe>
     </div>
   </div>
 
@@ -123,11 +121,10 @@
     </div>
 
     <div class="side-box">
-  <h2>Bus 84 – Rudolfintie (H4097)</h2>
-  <div class="departures" id="departures">
-    <div class="note">Loading departures...</div>
-  </div>
-</div>
+      <h2>Bus 84 – Rudolfintie</h2>
+      <div class="departures" id="departures">
+        <div class="note">Loading departures...</div>
+      </div>
     </div>
   </div>
 
@@ -142,7 +139,7 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // Weather (Open-Meteo – free, no key)
+    // Weather (Open-Meteo – free, no key needed)
     async function loadWeather() {
       try {
         const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=60.17&longitude=24.94&current=temperature_2m,weather_code&timezone=Europe%2FHelsinki');
@@ -152,8 +149,8 @@
 
         const descriptions = {
           0: "Clear", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
-          45: "Fog", 48: "Fog", 51: "Light drizzle", 61: "Rain", 71: "Snow",
-          80: "Rain showers", 95: "Thunderstorm"
+          45: "Fog", 48: "Fog", 51: "Light drizzle", 61: "Rain", 63: "Rain",
+          71: "Snow", 73: "Snow", 80: "Rain showers", 95: "Thunderstorm"
         };
 
         document.getElementById('weather').innerHTML = `
@@ -165,81 +162,81 @@
       }
     }
     loadWeather();
-    setInterval(loadWeather, 10 * 60 * 1000); // refresh every 10 min
+    setInterval(loadWeather, 10 * 60 * 1000);
 
+    // HSL Departures – Rudolfintie (HSL:1491113)
+    async function loadDepartures() {
+      const container = document.getElementById('departures');
+      const API_KEY = 'fb7596a828844a87933c2229abb55c31';
 
-async function loadDepartures() {
-  const container = document.getElementById('departures');
-  const API_KEY = 'fb7596a828844a87933c2229abb55c31';
-
-  const query = `
-  {
-    stop(id: "HSL:1491113") {
-      name
-      stoptimesWithoutPatterns(numberOfDepartures: 8) {
-        realtimeDeparture
-        scheduledDeparture
-        realtime
-        headsign
-        trip {
-          route {
-            shortName
+      const query = `
+      {
+        stop(id: "HSL:1491113") {
+          name
+          stoptimesWithoutPatterns(numberOfDepartures: 8) {
+            realtimeDeparture
+            scheduledDeparture
+            realtime
+            headsign
+            trip {
+              route {
+                shortName
+              }
+            }
           }
         }
+      }`;
+
+      try {
+        const res = await fetch('https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'digitransit-subscription-key': API_KEY
+          },
+          body: JSON.stringify({ query })
+        });
+
+        const json = await res.json();
+        const stoptimes = json.data?.stop?.stoptimesWithoutPatterns || [];
+
+        if (stoptimes.length === 0) {
+          container.innerHTML = '<div class="note">No upcoming departures</div>';
+          return;
+        }
+
+        let html = '';
+        const now = Math.floor(Date.now() / 1000);
+
+        stoptimes.forEach(st => {
+          const departure = st.realtime ? st.realtimeDeparture : st.scheduledDeparture;
+          const minutes = Math.round((departure - (now % 86400)) / 60);
+
+          let timeText;
+          if (minutes <= 0) timeText = 'Now';
+          else if (minutes < 60) timeText = `${minutes} min`;
+          else timeText = `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+
+          const line = st.trip?.route?.shortName || '?';
+          const dest = st.headsign || '';
+
+          html += `
+            <div class="departure">
+              <span class="line">${line}</span>
+              <span>${dest}</span>
+              <span>${timeText}</span>
+            </div>`;
+        });
+
+        container.innerHTML = html;
+      } catch (err) {
+        console.error(err);
+        container.innerHTML = '<div class="note">Could not load departures</div>';
       }
     }
-  }`;
 
-  try {
-    const res = await fetch('https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'digitransit-subscription-key': API_KEY
-      },
-      body: JSON.stringify({ query })
-    });
-
-    const json = await res.json();
-    const stoptimes = json.data?.stop?.stoptimesWithoutPatterns || [];
-
-    if (stoptimes.length === 0) {
-      container.innerHTML = '<div class="note">No upcoming departures</div>';
-      return;
-    }
-
-    let html = '';
-    const now = Math.floor(Date.now() / 1000);
-
-    stoptimes.forEach(st => {
-      const departure = st.realtime ? st.realtimeDeparture : st.scheduledDeparture;
-      const minutes = Math.round((departure - (now % 86400)) / 60);
-      
-      let timeText;
-      if (minutes <= 0) timeText = 'Now';
-      else if (minutes < 60) timeText = `${minutes} min`;
-      else timeText = `${Math.floor(minutes/60)}h ${minutes%60}m`;
-
-      const line = st.trip?.route?.shortName || '?';
-      const dest = st.headsign || '';
-
-      html += `
-        <div class="departure">
-          <span class="line">${line}</span>
-          <span>${dest}</span>
-          <span>${timeText}</span>
-        </div>`;
-    });
-
-    container.innerHTML = html;
-  } catch (err) {
-    console.error(err);
-    container.innerHTML = '<div class="note">Could not load departures</div>';
-  }
-}
-
-loadDepartures();
-setInterval(loadDepartures, 60 * 1000); // refresh every minute
-</script>
+    loadDepartures();
+    setInterval(loadDepartures, 60 * 1000);
+  </script>
 </body>
 </html>
