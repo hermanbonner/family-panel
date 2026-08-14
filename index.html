@@ -172,105 +172,114 @@
   </div>
 
   <script>
-    // Clock
+    // ===== CLOCK =====
     function updateClock() {
       const now = new Date();
       document.getElementById('clock').textContent = now.toLocaleTimeString('fi-FI', {
-        hour: '2-digit', minute: '2-digit'
+        hour: '2-digit',
+        minute: '2-digit'
       });
     }
     setInterval(updateClock, 1000);
     updateClock();
 
-    // Weather – Laajasalo + 3-day forecast with icons
-async function loadWeather() {
-  try {
-    const res = await fetch(
-      'https://api.open-meteo.com/v1/forecast' +
-      '?latitude=60.1752&longitude=25.0309' +
-      '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m' +
-      '&daily=weather_code,temperature_2m_max,temperature_2m_min' +
-      '&timezone=Europe%2FHelsinki' +
-      '&forecast_days=4'
-    );
-    const data = await res.json();
+    // ===== WEATHER (Laajasalo + 3-day forecast with icons) =====
+    async function loadWeather() {
+      const weatherEl = document.getElementById('weather');
 
-    const current = data.current;
-    const daily = data.daily;
+      try {
+        const url = 'https://api.open-meteo.com/v1/forecast' +
+          '?latitude=60.1752' +
+          '&longitude=25.0309' +
+          '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m' +
+          '&daily=weather_code,temperature_2m_max,temperature_2m_min' +
+          '&timezone=Europe%2FHelsinki' +
+          '&forecast_days=4';
 
-    const temp = Math.round(current.temperature_2m);
-    const feels = Math.round(current.apparent_temperature);
-    const wind = Math.round(current.wind_speed_10m);
-    const humidity = current.relative_humidity_2m;
-    const code = current.weather_code;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Weather API error');
 
-    const weatherInfo = {
-      0:  { desc: "Clear", icon: "☀️" },
-      1:  { desc: "Mainly clear", icon: "🌤️" },
-      2:  { desc: "Partly cloudy", icon: "⛅" },
-      3:  { desc: "Overcast", icon: "☁️" },
-      45: { desc: "Fog", icon: "🌫️" },
-      48: { desc: "Fog", icon: "🌫️" },
-      51: { desc: "Light drizzle", icon: "🌦️" },
-      53: { desc: "Drizzle", icon: "🌦️" },
-      55: { desc: "Dense drizzle", icon: "🌧️" },
-      61: { desc: "Slight rain", icon: "🌧️" },
-      63: { desc: "Rain", icon: "🌧️" },
-      65: { desc: "Heavy rain", icon: "🌧️" },
-      71: { desc: "Slight snow", icon: "🌨️" },
-      73: { desc: "Snow", icon: "❄️" },
-      75: { desc: "Heavy snow", icon: "❄️" },
-      80: { desc: "Rain showers", icon: "🌦️" },
-      81: { desc: "Showers", icon: "🌧️" },
-      82: { desc: "Heavy showers", icon: "🌧️" },
-      95: { desc: "Thunderstorm", icon: "⛈️" },
-      96: { desc: "Thunderstorm", icon: "⛈️" }
-    };
+        const data = await res.json();
 
-    const currentInfo = weatherInfo[code] || { desc: "Weather", icon: "🌡️" };
+        const current = data.current;
+        const daily = data.daily;
 
-    let forecastHtml = '';
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const temp = Math.round(current.temperature_2m);
+        const feels = Math.round(current.apparent_temperature);
+        const wind = Math.round(current.wind_speed_10m);
+        const humidity = current.relative_humidity_2m;
+        const code = current.weather_code;
 
-    for (let i = 1; i <= 3; i++) {
-      const date = new Date(daily.time[i]);
-      const dayName = days[date.getDay()];
-      const max = Math.round(daily.temperature_2m_max[i]);
-      const min = Math.round(daily.temperature_2m_min[i]);
-      const dayCode = daily.weather_code[i];
-      const info = weatherInfo[dayCode] || { desc: "", icon: "🌡️" };
+        const weatherInfo = {
+          0:  { desc: "Clear", icon: "☀️" },
+          1:  { desc: "Mainly clear", icon: "🌤️" },
+          2:  { desc: "Partly cloudy", icon: "⛅" },
+          3:  { desc: "Overcast", icon: "☁️" },
+          45: { desc: "Fog", icon: "🌫️" },
+          48: { desc: "Fog", icon: "🌫️" },
+          51: { desc: "Light drizzle", icon: "🌦️" },
+          53: { desc: "Drizzle", icon: "🌦️" },
+          55: { desc: "Dense drizzle", icon: "🌧️" },
+          61: { desc: "Slight rain", icon: "🌧️" },
+          63: { desc: "Rain", icon: "🌧️" },
+          65: { desc: "Heavy rain", icon: "🌧️" },
+          71: { desc: "Slight snow", icon: "🌨️" },
+          73: { desc: "Snow", icon: "❄️" },
+          75: { desc: "Heavy snow", icon: "❄️" },
+          80: { desc: "Rain showers", icon: "🌦️" },
+          81: { desc: "Showers", icon: "🌧️" },
+          82: { desc: "Heavy showers", icon: "🌧️" },
+          95: { desc: "Thunderstorm", icon: "⛈️" },
+          96: { desc: "Thunderstorm", icon: "⛈️" }
+        };
 
-      forecastHtml += `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid #333;">
-          <span style="width: 42px;">${dayName}</span>
-          <span style="width: 32px; text-align: center; font-size: 1.25rem;">${info.icon}</span>
-          <span style="flex: 1; opacity: 0.75; font-size: 0.95rem; padding-left: 6px;">${info.desc}</span>
-          <span>${min}° / ${max}°</span>
-        </div>
-      `;
+        const currentInfo = weatherInfo[code] || { desc: "Weather", icon: "🌡️" };
+
+        let forecastHtml = '';
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+        for (let i = 1; i <= 3; i++) {
+          const date = new Date(daily.time[i] + 'T12:00:00');
+          const dayName = days[date.getDay()];
+          const max = Math.round(daily.temperature_2m_max[i]);
+          const min = Math.round(daily.temperature_2m_min[i]);
+          const dayCode = daily.weather_code[i];
+          const info = weatherInfo[dayCode] || { desc: "", icon: "🌡️" };
+
+          forecastHtml += `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid #333;">
+              <span style="width: 42px;">${dayName}</span>
+              <span style="width: 32px; text-align: center; font-size: 1.25rem;">${info.icon}</span>
+              <span style="flex: 1; opacity: 0.75; font-size: 0.95rem; padding-left: 6px;">${info.desc}</span>
+              <span>${min}° / ${max}°</span>
+            </div>
+          `;
+        }
+
+        weatherEl.innerHTML = `
+          <div class="temp">${temp}°</div>
+          <div class="desc">${currentInfo.icon} ${currentInfo.desc}</div>
+          <div style="margin-top: 12px; font-size: 1.05rem; opacity: 0.85; line-height: 1.5;">
+            Feels like ${feels}° · Wind ${wind} km/h<br>
+            Humidity ${humidity}%
+          </div>
+          <div style="margin-top: 16px; font-size: 0.95rem;">
+            ${forecastHtml}
+          </div>
+        `;
+      } catch (e) {
+        console.error('Weather error:', e);
+        weatherEl.innerHTML = `
+          <div class="temp">--°</div>
+          <div class="desc">Weather unavailable</div>
+        `;
+      }
     }
 
-    document.getElementById('weather').innerHTML = `
-      <div class="temp">${temp}°</div>
-      <div class="desc">${currentInfo.icon} ${currentInfo.desc}</div>
-      <div style="margin-top: 12px; font-size: 1.05rem; opacity: 0.85; line-height: 1.5;">
-        Feels like ${feels}° · Wind ${wind} km/h<br>
-        Humidity ${humidity}%
-      </div>
-      <div style="margin-top: 16px; font-size: 0.95rem;">
-        ${forecastHtml}
-      </div>
-    `;
-  } catch (e) {
-    console.error(e);
-    document.getElementById('weather').innerHTML = `
-      <div class="temp">--°</div>
-      <div class="desc">Weather unavailable</div>
-    `;
-  }
-}
-    
-    // HSL Departures – Rudolfintie (only next 4)
+    loadWeather();
+    setInterval(loadWeather, 10 * 60 * 1000);
+
+    // ===== HSL DEPARTURES (absolute time + delay) =====
     async function loadDepartures() {
       const container = document.getElementById('departures');
       const API_KEY = 'fb7596a828844a87933c2229abb55c31';
@@ -283,6 +292,7 @@ async function loadWeather() {
             realtime
             realtimeDeparture
             scheduledDeparture
+            departureDelay
             serviceDay
             headsign
             trip {
@@ -320,17 +330,22 @@ async function loadWeather() {
         }
 
         let html = '';
-        const now = Math.floor(Date.now() / 1000);
 
         stoptimes.forEach(st => {
           const departureSeconds = st.realtime ? st.realtimeDeparture : st.scheduledDeparture;
           const absoluteTime = st.serviceDay + departureSeconds;
-          const minutes = Math.round((absoluteTime - now) / 60);
 
-          let timeText;
-          if (minutes <= 0) timeText = 'Now';
-          else if (minutes < 60) timeText = `${minutes} min`;
-          else timeText = `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+          const date = new Date(absoluteTime * 1000);
+          let timeText = date.toLocaleTimeString('fi-FI', {
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          // Show delay if ≥ 1 minute
+          const delayMinutes = Math.round((st.departureDelay || 0) / 60);
+          if (delayMinutes >= 1) {
+            timeText += ` <span style="color:#ff6b6b; font-size:0.9rem;">(+${delayMinutes})</span>`;
+          }
 
           const line = st.trip?.route?.shortName || '?';
           const dest = st.headsign || '';
