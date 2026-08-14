@@ -34,6 +34,7 @@
       grid-template-columns: 1fr 1fr;
       gap: 14px;
       height: 100%;
+      min-height: 0;
     }
     .calendar-box, .side-box {
       background: #1c1c1c;
@@ -41,6 +42,7 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      min-height: 0;
     }
     .calendar-box h2, .side-box h2 {
       font-size: 1.05rem;
@@ -51,48 +53,76 @@
     }
     .events-list {
       flex: 1;
-      padding: 16px;
       overflow-y: auto;
+      padding: 12px 16px 16px;
+    }
+    .section-header {
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #4fc3f7;
+      margin: 16px 0 8px 0;
+    }
+    .section-header:first-child { margin-top: 4px; }
+    .event-item {
+      padding: 9px 0;
+      border-bottom: 1px solid #2a2a2a;
+    }
+    .event-time {
+      font-weight: 600;
+      color: #4fc3f7;
+      margin-bottom: 2px;
+    }
+    .event-title { font-size: 1.05rem; }
+    .event-location {
+      font-size: 0.88rem;
+      opacity: 0.65;
+      margin-top: 2px;
     }
     .side {
       display: grid;
       grid-template-rows: auto 1fr;
       gap: 14px;
       height: 100%;
+      min-height: 0;
     }
     .weather {
-      padding: 20px;
+      padding: 18px 16px;
       text-align: center;
     }
     .weather .temp {
-      font-size: 3.4rem;
+      font-size: 3.6rem;
       font-weight: 300;
     }
     .weather .desc {
-      font-size: 1.15rem;
+      font-size: 1.2rem;
       opacity: 0.8;
       margin-top: 6px;
     }
     .departures {
       flex: 1;
-      padding: 12px 16px;
+      padding: 8px 16px 16px;
       overflow-y: auto;
     }
     .departure {
       display: flex;
       justify-content: space-between;
-      padding: 10px 0;
+      align-items: center;
+      padding: 11px 0;
       border-bottom: 1px solid #2a2a2a;
-      font-size: 1.1rem;
+      font-size: 1.15rem;
     }
     .line {
       font-weight: 700;
+      min-width: 48px;
       color: #4fc3f7;
-      min-width: 40px;
+      font-size: 1.2rem;
     }
     .note {
-      opacity: 0.6;
-      padding: 10px 0;
+      font-size: 0.95rem;
+      opacity: 0.55;
+      padding: 8px 0;
     }
   </style>
 </head>
@@ -105,14 +135,14 @@
   <div class="calendars">
     <div class="calendar-box">
       <h2>Aksel's Calendar</h2>
-      <div class="events-list" id="aksel-events">
-        <div class="note">Calendars coming back soon...</div>
+      <div id="aksel-events" class="events-list">
+        <div class="note">Loading...</div>
       </div>
     </div>
     <div class="calendar-box">
       <h2>Ivar's Calendar</h2>
-      <div class="events-list" id="ivar-events">
-        <div class="note">Calendars coming back soon...</div>
+      <div id="ivar-events" class="events-list">
+        <div class="note">Loading...</div>
       </div>
     </div>
   </div>
@@ -126,4 +156,253 @@
       </div>
     </div>
     <div class="side-box">
-      <h2>Bus
+      <h2>Bus – Stop 1491171</h2>
+      <div class="departures" id="departures">
+        <div class="note">Loading departures...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // CLOCK
+    function updateClock() {
+      document.getElementById('clock').textContent = new Date().toLocaleTimeString('fi-FI', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // WEATHER
+    async function loadWeather() {
+      try {
+        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=60.1752&longitude=25.0309&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Europe%2FHelsinki&forecast_days=4');
+        const data = await res.json();
+
+        const c = data.current;
+        const d = data.daily;
+        const temp = Math.round(c.temperature_2m);
+        const feels = Math.round(c.apparent_temperature);
+        const wind = Math.round(c.wind_speed_10m);
+        const humidity = c.relative_humidity_2m;
+
+        const icons = {
+          0: "☀️ Clear", 1: "🌤️ Mainly clear", 2: "⛅ Partly cloudy", 3: "☁️ Overcast",
+          45: "🌫️ Fog", 48: "🌫️ Fog",
+          51: "🌦️ Light drizzle", 53: "🌦️ Drizzle", 61: "🌧️ Rain", 63: "🌧️ Rain",
+          71: "🌨️ Snow", 73: "❄️ Snow", 80: "🌦️ Showers", 95: "⛈️ Thunderstorm"
+        };
+
+        let forecast = '';
+        const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        for (let i = 1; i <= 3; i++) {
+          const day = days[new Date(d.time[i]).getDay()];
+          const max = Math.round(d.temperature_2m_max[i]);
+          const min = Math.round(d.temperature_2m_min[i]);
+          const desc = icons[d.weather_code[i]] || "Weather";
+          forecast += `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #333;">
+            <span>${day}</span><span>${desc}</span><span>${min}° / ${max}°</span></div>`;
+        }
+
+        document.getElementById('weather').innerHTML = `
+          <div class="temp">${temp}°</div>
+          <div class="desc">${icons[c.weather_code] || "Weather"}</div>
+          <div style="margin-top:12px;font-size:1.05rem;opacity:0.85;">
+            Feels like ${feels}° · Wind ${wind} km/h<br>Humidity ${humidity}%
+          </div>
+          <div style="margin-top:14px;font-size:0.95rem;">${forecast}</div>
+        `;
+      } catch (e) {
+        document.getElementById('weather').innerHTML = `<div class="temp">--°</div><div class="desc">Weather unavailable</div>`;
+      }
+    }
+    loadWeather();
+    setInterval(loadWeather, 600000);
+
+    // ICS PARSER
+    function parseICS(text) {
+      const events = [];
+      const parts = text.split('BEGIN:VEVENT');
+      for (let i = 1; i < parts.length; i++) {
+        const b = parts[i];
+        const summary = (b.match(/SUMMARY[^:]*:(.*)/) || [])[1]?.trim() || 'Event';
+        const location = (b.match(/LOCATION[^:]*:(.*)/) || [])[1]?.trim() || '';
+        const startStr = (b.match(/DTSTART[^:]*:(.*)/) || [])[1]?.trim();
+        const endStr = (b.match(/DTEND[^:]*:(.*)/) || [])[1]?.trim();
+
+        if (!startStr) continue;
+
+        function toDate(s) {
+          if (!s) return null;
+          s = s.replace('Z', '');
+          if (s.length === 8) {
+            return new Date(s.slice(0,4), parseInt(s.slice(4,6))-1, s.slice(6,8));
+          }
+          return new Date(
+            s.slice(0,4), parseInt(s.slice(4,6))-1, s.slice(6,8),
+            s.slice(9,11) || 0, s.slice(11,13) || 0
+          );
+        }
+
+        events.push({
+          summary,
+          location,
+          start: toDate(startStr),
+          end: toDate(endStr)
+        });
+      }
+      return events;
+    }
+
+    function fmt(d) {
+      if (!d) return '';
+      return d.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // LOAD ONE CHILD
+    async function loadChild(id, schoolUrl, soccerUrl) {
+      const el = document.getElementById(id);
+      try {
+        // School
+        const schoolRes = await fetch(schoolUrl);
+        const schoolText = await schoolRes.text();
+        const school = parseICS(schoolText);
+
+        // Soccer via proxy
+        let soccer = [];
+        try {
+          const proxy = 'https://corsproxy.io/?' + encodeURIComponent(soccerUrl);
+          const sRes = await fetch(proxy);
+          if (sRes.ok) {
+            soccer = parseICS(await sRes.text());
+          }
+        } catch (e) {}
+
+        const now = new Date();
+        const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const today1 = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        const tom1 = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
+
+        const todaySchool = school.filter(e => e.start >= today0 && e.start < today1).sort((a,b) => a.start - b.start);
+        const todaySoccer = soccer.filter(e => e.start >= today0 && e.start < today1).sort((a,b) => a.start - b.start);
+        const tomSchool = school.filter(e => e.start >= today1 && e.start < tom1).sort((a,b) => a.start - b.start);
+
+        let html = '';
+
+        // School
+        html += `<div class="section-header">School</div>`;
+        if (todaySchool.length === 0) {
+          html += `<div class="note">No more school today</div>`;
+        } else {
+          todaySchool.forEach(e => {
+            const t = e.end ? `${fmt(e.start)} – ${fmt(e.end)}` : fmt(e.start);
+            html += `<div class="event-item">
+              <div class="event-time">${t}</div>
+              <div class="event-title">${e.summary}</div>
+              ${e.location ? `<div class="event-location">${e.location}</div>` : ''}
+            </div>`;
+          });
+        }
+
+        // Soccer
+        html += `<div class="section-header">Soccer</div>`;
+        if (todaySoccer.length === 0) {
+          html += `<div class="note">No soccer today</div>`;
+        } else {
+          todaySoccer.forEach(e => {
+            const t = e.end ? `${fmt(e.start)} – ${fmt(e.end)}` : fmt(e.start);
+            html += `<div class="event-item">
+              <div class="event-time">${t}</div>
+              <div class="event-title">${e.summary}</div>
+              ${e.location ? `<div class="event-location">${e.location}</div>` : ''}
+            </div>`;
+          });
+        }
+
+        // Tomorrow
+        html += `<div class="section-header">First Thing Tomorrow</div>`;
+        if (tomSchool.length === 0) {
+          html += `<div class="note">No School</div>`;
+        } else {
+          const e = tomSchool[0];
+          const t = e.end ? `${fmt(e.start)} – ${fmt(e.end)}` : fmt(e.start);
+          html += `<div class="event-item">
+            <div class="event-time">${t}</div>
+            <div class="event-title">${e.summary}</div>
+            ${e.location ? `<div class="event-location">${e.location}</div>` : ''}
+          </div>`;
+        }
+
+        el.innerHTML = html;
+      } catch (err) {
+        console.error(err);
+        el.innerHTML = `<div class="note">Could not load schedule</div>`;
+      }
+    }
+
+    // URLs
+    const AKSEL_SCHOOL = 'https://yvkoulut.inschool.fi/schedule/export/students/167030/Wilma.ics?token=04167030xca951b62f2c0ffca02025635a42a812c&p=28&f=56&tstamp=1786682462';
+    const AKSEL_SOCCER = 'https://id.myclub.fi/flow/calendar_subscriptions/46384.ics?token=1900f8ae39d12415a5d741d2a6d739d9edc271ad';
+    const IVAR_SCHOOL  = 'https://helsinki.inschool.fi/schedule/export/students/629788/Wilma.ics?token=04629788xbfa1cd9f9404e2a8196048f4b00d04db&p=28&f=56&tstamp=1786682566';
+    const IVAR_SOCCER  = 'https://id.myclub.fi/flow/calendar_subscriptions/46330.ics?token=d7f8d00e0516158b87fbe67a4f2916a961383c18';
+
+    function refresh() {
+      loadChild('aksel-events', AKSEL_SCHOOL, AKSEL_SOCCER);
+      loadChild('ivar-events', IVAR_SCHOOL, IVAR_SOCCER);
+    }
+    refresh();
+    setInterval(refresh, 15 * 60 * 1000);
+
+    // BUS
+    async function loadBus() {
+      try {
+        const res = await fetch('https://api.digitransit.fi/routing/v2/hsl/gtfs/v1', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'digitransit-subscription-key': 'fb7596a828844a87933c2229abb55c31'
+          },
+          body: JSON.stringify({
+            query: `{
+              stop(id: "HSL:1491171") {
+                stoptimesWithoutPatterns(numberOfDepartures: 4) {
+                  realtime realtimeDeparture scheduledDeparture departureDelay serviceDay headsign
+                  trip { route { shortName } }
+                }
+              }
+            }`
+          })
+        });
+        const json = await res.json();
+        const list = json.data?.stop?.stoptimesWithoutPatterns || [];
+
+        if (list.length === 0) {
+          document.getElementById('departures').innerHTML = '<div class="note">No upcoming departures</div>';
+          return;
+        }
+
+        let html = '';
+        list.forEach(st => {
+          const secs = st.realtime ? st.realtimeDeparture : st.scheduledDeparture;
+          const time = new Date((st.serviceDay + secs) * 1000);
+          let t = time.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+          const delay = Math.round((st.departureDelay || 0) / 60);
+          if (delay >= 1) t += ` <span style="color:#ff6b6b">(+${delay})</span>`;
+
+          html += `<div class="departure">
+            <span class="line">${st.trip?.route?.shortName || '?'}</span>
+            <span>${st.headsign || ''}</span>
+            <span>${t}</span>
+          </div>`;
+        });
+        document.getElementById('departures').innerHTML = html;
+      } catch (e) {
+        document.getElementById('departures').innerHTML = '<div class="note">Could not load departures</div>';
+      }
+    }
+    loadBus();
+    setInterval(loadBus, 60000);
+  </script>
+</body>
+</html>
