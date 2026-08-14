@@ -6,7 +6,6 @@
   <title>Family Dashboard</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: #0f0f0f;
@@ -19,7 +18,6 @@
       gap: 14px;
       padding: 14px;
     }
-
     .header {
       grid-column: 1 / -1;
       display: flex;
@@ -29,171 +27,92 @@
       background: #1c1c1c;
       border-radius: 14px;
     }
-
-    .header h1 {
-      font-size: 1.5rem;
-      font-weight: 600;
-      letter-spacing: -0.3px;
-    }
-
-    .time {
-      font-size: 1.7rem;
-      font-weight: 500;
-      font-variant-numeric: tabular-nums;
-    }
-
+    .header h1 { font-size: 1.5rem; font-weight: 600; }
+    .time { font-size: 1.7rem; font-weight: 500; }
     .calendars {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 14px;
       height: 100%;
-      min-height: 0;
     }
-
     .calendar-box, .side-box {
       background: #1c1c1c;
       border-radius: 14px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      min-height: 0;
     }
-
     .calendar-box h2, .side-box h2 {
       font-size: 1.05rem;
       font-weight: 600;
       padding: 12px 16px;
       background: #252525;
       border-bottom: 1px solid #333;
-      flex-shrink: 0;
     }
-
     .events-list {
       flex: 1;
+      padding: 16px;
       overflow-y: auto;
-      padding: 12px 16px 16px;
-      font-size: 1.05rem;
     }
-
-    .section-header {
-      font-size: 0.82rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      color: #4fc3f7;
-      margin: 16px 0 8px 0;
-      opacity: 0.9;
-    }
-
-    .section-header:first-child {
-      margin-top: 4px;
-    }
-
-    .event-item {
-      padding: 9px 0;
-      border-bottom: 1px solid #2a2a2a;
-    }
-
-    .event-item:last-child {
-      border-bottom: none;
-    }
-
-    .event-time {
-      font-weight: 600;
-      color: #4fc3f7;
-      margin-bottom: 2px;
-      font-size: 0.98rem;
-    }
-
-    .event-title {
-      font-size: 1.05rem;
-      line-height: 1.3;
-    }
-
-    .event-location {
-      font-size: 0.88rem;
-      opacity: 0.65;
-      margin-top: 2px;
-    }
-
     .side {
       display: grid;
       grid-template-rows: auto 1fr;
       gap: 14px;
       height: 100%;
-      min-height: 0;
     }
-
     .weather {
-      padding: 18px 16px 16px;
+      padding: 20px;
       text-align: center;
     }
-
     .weather .temp {
-      font-size: 3.6rem;
+      font-size: 3.4rem;
       font-weight: 300;
-      line-height: 1;
-      letter-spacing: -1px;
     }
-
     .weather .desc {
-      font-size: 1.2rem;
+      font-size: 1.15rem;
       opacity: 0.8;
       margin-top: 6px;
     }
-
     .departures {
       flex: 1;
-      padding: 8px 16px 16px;
+      padding: 12px 16px;
       overflow-y: auto;
-      min-height: 0;
     }
-
     .departure {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      padding: 11px 0;
+      padding: 10px 0;
       border-bottom: 1px solid #2a2a2a;
-      font-size: 1.15rem;
+      font-size: 1.1rem;
     }
-
-    .departure:last-child {
-      border-bottom: none;
-    }
-
     .line {
       font-weight: 700;
-      min-width: 48px;
       color: #4fc3f7;
-      font-size: 1.2rem;
+      min-width: 40px;
     }
-
     .note {
-      font-size: 0.95rem;
-      opacity: 0.55;
-      padding: 8px 0 4px;
+      opacity: 0.6;
+      padding: 10px 0;
     }
   </style>
 </head>
 <body>
   <div class="header">
     <h1>Family Dashboard</h1>
-    <div class="time" id="clock"></div>
+    <div class="time" id="clock">--:--</div>
   </div>
 
   <div class="calendars">
     <div class="calendar-box">
       <h2>Aksel's Calendar</h2>
-      <div id="aksel-events" class="events-list">
-        <div class="note">Loading...</div>
+      <div class="events-list" id="aksel-events">
+        <div class="note">Calendars coming back soon...</div>
       </div>
     </div>
-
     <div class="calendar-box">
       <h2>Ivar's Calendar</h2>
-      <div id="ivar-events" class="events-list">
-        <div class="note">Loading...</div>
+      <div class="events-list" id="ivar-events">
+        <div class="note">Calendars coming back soon...</div>
       </div>
     </div>
   </div>
@@ -206,213 +125,5 @@
         <div class="desc">Loading...</div>
       </div>
     </div>
-
     <div class="side-box">
-      <h2>Bus – Stop 1491171</h2>
-      <div class="departures" id="departures">
-        <div class="note">Loading departures...</div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // ===== CLOCK =====
-    function updateClock() {
-      const now = new Date();
-      document.getElementById('clock').textContent = now.toLocaleTimeString('fi-FI', {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
-
-    // ===== WEATHER =====
-    async function loadWeather() {
-      const weatherEl = document.getElementById('weather');
-      try {
-        const url = 'https://api.open-meteo.com/v1/forecast' +
-          '?latitude=60.1752&longitude=25.0309' +
-          '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m' +
-          '&daily=weather_code,temperature_2m_max,temperature_2m_min' +
-          '&timezone=Europe%2FHelsinki&forecast_days=4';
-
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('Weather API error');
-        const data = await res.json();
-
-        const current = data.current;
-        const daily = data.daily;
-
-        const temp = Math.round(current.temperature_2m);
-        const feels = Math.round(current.apparent_temperature);
-        const wind = Math.round(current.wind_speed_10m);
-        const humidity = current.relative_humidity_2m;
-        const code = current.weather_code;
-
-        const weatherInfo = {
-          0:  { desc: "Clear", icon: "☀️" },
-          1:  { desc: "Mainly clear", icon: "🌤️" },
-          2:  { desc: "Partly cloudy", icon: "⛅" },
-          3:  { desc: "Overcast", icon: "☁️" },
-          45: { desc: "Fog", icon: "🌫️" },
-          48: { desc: "Fog", icon: "🌫️" },
-          51: { desc: "Light drizzle", icon: "🌦️" },
-          53: { desc: "Drizzle", icon: "🌦️" },
-          55: { desc: "Dense drizzle", icon: "🌧️" },
-          61: { desc: "Slight rain", icon: "🌧️" },
-          63: { desc: "Rain", icon: "🌧️" },
-          65: { desc: "Heavy rain", icon: "🌧️" },
-          71: { desc: "Slight snow", icon: "🌨️" },
-          73: { desc: "Snow", icon: "❄️" },
-          75: { desc: "Heavy snow", icon: "❄️" },
-          80: { desc: "Rain showers", icon: "🌦️" },
-          81: { desc: "Showers", icon: "🌧️" },
-          82: { desc: "Heavy showers", icon: "🌧️" },
-          95: { desc: "Thunderstorm", icon: "⛈️" },
-          96: { desc: "Thunderstorm", icon: "⛈️" }
-        };
-
-        const currentInfo = weatherInfo[code] || { desc: "Weather", icon: "🌡️" };
-
-        let forecastHtml = '';
-        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-        for (let i = 1; i <= 3; i++) {
-          const date = new Date(daily.time[i] + 'T12:00:00');
-          const dayName = days[date.getDay()];
-          const max = Math.round(daily.temperature_2m_max[i]);
-          const min = Math.round(daily.temperature_2m_min[i]);
-          const info = weatherInfo[daily.weather_code[i]] || { desc: "", icon: "🌡️" };
-
-          forecastHtml += `
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #333;">
-              <span style="width:42px;">${dayName}</span>
-              <span style="width:32px;text-align:center;font-size:1.25rem;">${info.icon}</span>
-              <span style="flex:1;opacity:0.75;font-size:0.95rem;padding-left:6px;">${info.desc}</span>
-              <span>${min}° / ${max}°</span>
-            </div>`;
-        }
-
-        weatherEl.innerHTML = `
-          <div class="temp">${temp}°</div>
-          <div class="desc">${currentInfo.icon} ${currentInfo.desc}</div>
-          <div style="margin-top:12px;font-size:1.05rem;opacity:0.85;line-height:1.5;">
-            Feels like ${feels}° · Wind ${wind} km/h<br>
-            Humidity ${humidity}%
-          </div>
-          <div style="margin-top:16px;font-size:0.95rem;">
-            ${forecastHtml}
-          </div>
-        `;
-      } catch (e) {
-        console.error('Weather error:', e);
-        weatherEl.innerHTML = `
-          <div class="temp">--°</div>
-          <div class="desc">Weather unavailable</div>
-        `;
-      }
-    }
-    loadWeather();
-    setInterval(loadWeather, 10 * 60 * 1000);
-
-    // ===== ICS PARSER =====
-    function parseICS(icsText) {
-      const events = [];
-      const blocks = icsText.split('BEGIN:VEVENT');
-
-      for (let i = 1; i < blocks.length; i++) {
-        const block = blocks[i];
-
-        const summaryMatch = block.match(/SUMMARY(?:;[^:]*)?:(.*)/);
-        const locationMatch = block.match(/LOCATION(?:;[^:]*)?:(.*)/);
-        const dtstartMatch = block.match(/DTSTART(?:;[^:]*)?:(.*)/);
-        const dtendMatch   = block.match(/DTEND(?:;[^:]*)?:(.*)/);
-
-        const summary  = summaryMatch  ? summaryMatch[1].trim()  : 'Event';
-        const location = locationMatch ? locationMatch[1].trim() : '';
-        const dtstart  = dtstartMatch  ? dtstartMatch[1].trim()  : null;
-        const dtend    = dtendMatch    ? dtendMatch[1].trim()    : null;
-
-        if (!dtstart) continue;
-
-        const parseDate = (str) => {
-          if (!str) return null;
-          // Remove any trailing Z or timezone info for simplicity
-          const cleaned = str.replace(/Z$/, '').replace(/T/, '');
-          if (cleaned.length >= 8) {
-            const year  = parseInt(cleaned.slice(0, 4));
-            const month = parseInt(cleaned.slice(4, 6)) - 1;
-            const day   = parseInt(cleaned.slice(6, 8));
-            const hour  = cleaned.length >= 10 ? parseInt(cleaned.slice(8, 10)) : 0;
-            const min   = cleaned.length >= 12 ? parseInt(cleaned.slice(10, 12)) : 0;
-            return new Date(year, month, day, hour, min);
-          }
-          return null;
-        };
-
-        const start = parseDate(dtstart);
-        const end   = parseDate(dtend);
-
-        if (start) {
-          events.push({ summary, location, start, end });
-        }
-      }
-      return events;
-    }
-
-    function formatTime(date) {
-      if (!date) return '';
-      return date.toLocaleTimeString('fi-FI', {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
-
-    // ===== LOAD CHILD SCHEDULE =====
-    async function loadChildSchedule(containerId, schoolUrl, soccerUrl) {
-      const container = document.getElementById(containerId);
-
-      try {
-        // --- School (required) ---
-        const schoolRes = await fetch(schoolUrl);
-        if (!schoolRes.ok) throw new Error('School calendar failed');
-        const schoolText = await schoolRes.text();
-        const schoolEvents = parseICS(schoolText);
-
-        // --- Soccer (optional + CORS proxy) ---
-        let soccerEvents = [];
-        try {
-          const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(soccerUrl);
-          const soccerRes = await fetch(proxyUrl);
-          if (soccerRes.ok) {
-            const soccerText = await soccerRes.text();
-            soccerEvents = parseICS(soccerText);
-          }
-        } catch (e) {
-          console.warn('Soccer calendar could not be loaded:', e);
-        }
-
-        const now = new Date();
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const todayEnd   = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-        const tomorrowStart = todayEnd;
-        const tomorrowEnd   = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
-
-        const todaySchool = schoolEvents
-          .filter(e => e.start >= todayStart && e.start < todayEnd)
-          .sort((a, b) => a.start - b.start);
-
-        const todaySoccer = soccerEvents
-          .filter(e => e.start >= todayStart && e.start < todayEnd)
-          .sort((a, b) => a.start - b.start);
-
-        const tomorrowSchool = schoolEvents
-          .filter(e => e.start >= tomorrowStart && e.start < tomorrowEnd)
-          .sort((a, b) => a.start - b.start);
-
-        let html = '';
-
-        // ===== SCHOOL =====
-        html += `<div class="section-header">School</div>`;
-        if (todaySchool.length === 0
+      <h2>Bus
