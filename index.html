@@ -7,13 +7,13 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
       background: #0f0f0f;
       color: #eee;
       height: 100vh;
       overflow: hidden;
       display: grid;
-      grid-template-columns: 1.7fr 1fr;
+      grid-template-columns: 2.1fr 0.9fr;   /* Right column is now slimmer */
       gap: 14px;
       padding: 14px;
     }
@@ -83,18 +83,18 @@
       text-align: center;
     }
     .datetime .time {
-      font-size: 3.1rem;
+      font-size: 3.0rem;
       font-weight: 300;
       letter-spacing: -1px;
       font-variant-numeric: tabular-nums;
     }
     .datetime .weekday {
-      font-size: 1.35rem;
+      font-size: 1.3rem;
       margin-top: 8px;
       font-weight: 500;
     }
     .datetime .date {
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       opacity: 0.85;
       margin-top: 2px;
     }
@@ -105,21 +105,21 @@
       font-weight: 500;
     }
     .weather {
-      padding: 18px 16px;
+      padding: 16px 14px;
       text-align: center;
     }
     .weather .temp {
-      font-size: 3.2rem;
+      font-size: 3.0rem;
       font-weight: 300;
     }
     .weather .desc {
-      font-size: 1.25rem;
+      font-size: 1.2rem;
       opacity: 0.9;
       margin-top: 6px;
     }
     .departures {
       flex: 1;
-      padding: 12px 16px;
+      padding: 12px 14px;
       overflow-y: auto;
       min-height: 0;
     }
@@ -128,12 +128,12 @@
       justify-content: space-between;
       padding: 10px 0;
       border-bottom: 1px solid #2a2a2a;
-      font-size: 1.1rem;
+      font-size: 1.05rem;
     }
     .line {
       font-weight: 700;
       color: #4fc3f7;
-      min-width: 40px;
+      min-width: 38px;
     }
     .note {
       opacity: 0.55;
@@ -235,17 +235,17 @@
       result[formatKey(addDays(easter, 39))] = "Ascension Day";
       result[formatKey(addDays(easter, 49))] = "Pentecost";
 
-      // Mother's Day (2nd Sunday May)
+      // Mother's Day
       const may1 = new Date(year, 4, 1);
       const motherDay = new Date(year, 4, 1 + ((7 - may1.getDay()) % 7) + 7);
       result[formatKey(motherDay)] = "Mother's Day";
 
-      // Father's Day (2nd Sunday November)
+      // Father's Day
       const nov1 = new Date(year, 10, 1);
       const fatherDay = new Date(year, 10, 1 + ((7 - nov1.getDay()) % 7) + 7);
       result[formatKey(fatherDay)] = "Father's Day";
 
-      // Midsummer (Sat 20-26 June)
+      // Midsummer
       for (let d = 20; d <= 26; d++) {
         const mid = new Date(year, 5, d);
         if (mid.getDay() === 6) {
@@ -255,7 +255,7 @@
         }
       }
 
-      // Nature Day (last Saturday August)
+      // Nature Day
       const aug31 = new Date(year, 7, 31);
       const natureDay = new Date(year, 7, 31 - ((aug31.getDay() + 1) % 7));
       result[formatKey(natureDay)] = "Finnish Nature Day";
@@ -295,14 +295,14 @@
     setInterval(updateDateTime, 1000);
     updateDateTime();
 
-    // ===== WEATHER =====
+    // ===== WEATHER (with wind in forecast) =====
     async function loadWeather() {
       try {
         const res = await fetch(
           'https://api.open-meteo.com/v1/forecast' +
           '?latitude=60.1752&longitude=25.0309' +
           '&current=temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m,apparent_temperature' +
-          '&daily=temperature_2m_max,temperature_2m_min,weather_code' +
+          '&daily=temperature_2m_max,temperature_2m_min,weather_code,wind_speed_10m_max' +
           '&timezone=Europe%2FHelsinki&forecast_days=4'
         );
         const data = await res.json();
@@ -334,24 +334,28 @@
           const dayName = days[d.getDay()];
           const max = Math.round(data.daily.temperature_2m_max[i]);
           const min = Math.round(data.daily.temperature_2m_min[i]);
+          const windMax = Math.round(data.daily.wind_speed_10m_max[i]);
           const dayInfo = weatherMap[data.daily.weather_code[i]] || { icon: "🌡️", desc: "" };
 
           forecast += `
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #333;font-size:0.95rem;">
-              <span style="width:40px;">${dayName}</span>
-              <span style="font-size:1.25rem;width:34px;text-align:center;">${dayInfo.icon}</span>
-              <span style="flex:1;opacity:0.8;padding-left:4px;">${dayInfo.desc}</span>
-              <span>${min}° / ${max}°</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #333;font-size:0.92rem;">
+              <span style="width:36px;">${dayName}</span>
+              <span style="font-size:1.2rem;width:30px;text-align:center;">${dayInfo.icon}</span>
+              <span style="flex:1;opacity:0.8;padding-left:4px;font-size:0.88rem;">${dayInfo.desc}</span>
+              <span style="text-align:right;line-height:1.3;">
+                ${min}°/${max}°<br>
+                <span style="opacity:0.7;font-size:0.82rem;">${windMax} km/h</span>
+              </span>
             </div>`;
         }
 
         document.getElementById('weather').innerHTML = `
           <div class="temp">${temp}°</div>
           <div class="desc">${current.icon} ${current.desc}</div>
-          <div style="margin-top:12px;font-size:1rem;opacity:0.85;line-height:1.5;">
+          <div style="margin-top:10px;font-size:0.95rem;opacity:0.85;line-height:1.45;">
             Feels ${feels}° · Wind ${wind} km/h<br>Humidity ${humidity}%
           </div>
-          <div style="margin-top:14px;">${forecast}</div>
+          <div style="margin-top:12px;">${forecast}</div>
         `;
       } catch (e) {
         document.getElementById('weather').innerHTML = `<div class="temp">--°</div><div class="desc">Weather unavailable</div>`;
@@ -360,7 +364,7 @@
     loadWeather();
     setInterval(loadWeather, 10 * 60 * 1000);
 
-    // ===== ICS PARSER =====
+    // ===== ICS PARSER + CALENDARS =====
     function parseICS(text) {
       const events = [];
       const parts = text.split('BEGIN:VEVENT');
@@ -388,16 +392,12 @@
       return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
     }
 
-    // ===== LOAD CHILD SCHEDULE =====
     async function loadChild(id, schoolUrl, soccerUrl) {
       const el = document.getElementById(id);
       try {
-        // School
         const schoolRes = await fetch(schoolUrl);
-        const schoolText = await schoolRes.text();
-        const school = parseICS(schoolText);
+        const school = parseICS(await schoolRes.text());
 
-        // Soccer via CORS proxy
         let soccer = [];
         try {
           const proxy = 'https://corsproxy.io/?' + encodeURIComponent(soccerUrl);
@@ -416,7 +416,6 @@
 
         let html = '';
 
-        // School
         html += `<div class="section-header">School</div>`;
         if (todaySchool.length === 0) {
           html += `<div class="note">No more school today</div>`;
@@ -431,7 +430,6 @@
           });
         }
 
-        // Soccer
         html += `<div class="section-header">Soccer</div>`;
         if (todaySoccer.length === 0) {
           html += `<div class="note">No soccer today</div>`;
@@ -446,7 +444,6 @@
           });
         }
 
-        // First Thing Tomorrow
         html += `<div class="section-header">First Thing Tomorrow</div>`;
         if (tomSchool.length === 0) {
           html += `<div class="note">No School</div>`;
@@ -462,12 +459,10 @@
 
         el.innerHTML = html;
       } catch (err) {
-        console.error(err);
         el.innerHTML = `<div class="note">Could not load schedule</div>`;
       }
     }
 
-    // Calendar URLs
     const AKSEL_SCHOOL = 'https://yvkoulut.inschool.fi/schedule/export/students/167030/Wilma.ics?token=04167030xca951b62f2c0ffca02025635a42a812c&p=28&f=56&tstamp=1786682462';
     const AKSEL_SOCCER = 'https://id.myclub.fi/flow/calendar_subscriptions/46384.ics?token=1900f8ae39d12415a5d741d2a6d739d9edc271ad';
     const IVAR_SCHOOL  = 'https://helsinki.inschool.fi/schedule/export/students/629788/Wilma.ics?token=04629788xbfa1cd9f9404e2a8196048f4b00d04db&p=28&f=56&tstamp=1786682566';
