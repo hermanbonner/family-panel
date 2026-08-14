@@ -14,7 +14,7 @@
       height: 100vh;
       overflow: hidden;
       display: grid;
-      grid-template-columns: 1.6fr 1fr;
+      grid-template-columns: 1.7fr 1fr;
       grid-template-rows: 56px 1fr;
       gap: 14px;
       padding: 14px;
@@ -42,9 +42,10 @@
       font-variant-numeric: tabular-nums;
     }
 
+    /* Left side - two calendars side by side */
     .calendars {
       display: grid;
-      grid-template-rows: 1fr 1fr;
+      grid-template-columns: 1fr 1fr;
       gap: 14px;
       height: 100%;
       min-height: 0;
@@ -76,6 +77,7 @@
       min-height: 0;
     }
 
+    /* Right side */
     .side {
       display: grid;
       grid-template-rows: auto 1fr;
@@ -145,11 +147,11 @@
 
   <div class="calendars">
     <div class="calendar-box">
-      <h2>Herman's Calendar</h2>
+      <h2>Aksel's Calendar</h2>
       <iframe src="https://calendar.google.com/calendar/embed?src=YOUR_CALENDAR_1_ID%40group.calendar.google.com&ctz=Europe%2FHelsinki&mode=AGENDA&showTitle=0&showNav=0&showDate=0&showPrint=0&showTabs=0&showCalendars=0&showTz=0"></iframe>
     </div>
     <div class="calendar-box">
-      <h2>Family Calendar</h2>
+      <h2>Ivar's Calendar</h2>
       <iframe src="https://calendar.google.com/calendar/embed?src=YOUR_CALENDAR_2_ID%40group.calendar.google.com&ctz=Europe%2FHelsinki&mode=AGENDA&showTitle=0&showNav=0&showDate=0&showPrint=0&showTabs=0&showCalendars=0&showTz=0"></iframe>
     </div>
   </div>
@@ -183,7 +185,7 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // ===== WEATHER (Laajasalo + 3-day forecast with icons) =====
+    // ===== WEATHER =====
     async function loadWeather() {
       const weatherEl = document.getElementById('weather');
 
@@ -200,7 +202,6 @@
         if (!res.ok) throw new Error('Weather API error');
 
         const data = await res.json();
-
         const current = data.current;
         const daily = data.daily;
 
@@ -279,7 +280,7 @@
     loadWeather();
     setInterval(loadWeather, 10 * 60 * 1000);
 
-    // ===== HSL DEPARTURES (absolute time + delay) =====
+    // ===== HSL DEPARTURES =====
     async function loadDepartures() {
       const container = document.getElementById('departures');
       const API_KEY = 'fb7596a828844a87933c2229abb55c31';
@@ -341,7 +342,6 @@
             minute: '2-digit'
           });
 
-          // Show delay if ≥ 1 minute
           const delayMinutes = Math.round((st.departureDelay || 0) / 60);
           if (delayMinutes >= 1) {
             timeText += ` <span style="color:#ff6b6b; font-size:0.9rem;">(+${delayMinutes})</span>`;
