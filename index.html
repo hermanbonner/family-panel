@@ -295,49 +295,85 @@
     updateDateTime();
 
     // WEATHER
-    async function loadWeather() {
-      try {
-        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=60.1752&longitude=25.0309&current=temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m,apparent_temperature&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=Europe%2FHelsinki&forecast_days=4');
-        const data = await res.json();
+    // WEATHER with icons
+async function loadWeather() {
+  try {
+    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=60.1752&longitude=25.0309&current=temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m,apparent_temperature&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=Europe%2FHelsinki&forecast_days=4');
+    const data = await res.json();
 
-        const temp = Math.round(data.current.temperature_2m);
-        const feels = Math.round(data.current.apparent_temperature);
-        const wind = Math.round(data.current.wind_speed_10m);
-        const humidity = data.current.relative_humidity_2m;
+    const temp = Math.round(data.current.temperature_2m);
+    const feels = Math.round(data.current.apparent_temperature);
+    const wind = Math.round(data.current.wind_speed_10m);
+    const humidity = data.current.relative_humidity_2m;
+    const code = data.current.weather_code;
 
-        const codes = {
-          0: "Clear", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
-          45: "Fog", 61: "Rain", 63: "Rain", 80: "Showers", 95: "Thunderstorm"
-        };
+    // Weather icons + descriptions
+    const weatherMap = {
+      0:  { icon: "☀️",  desc: "Clear" },
+      1:  { icon: "🌤️", desc: "Mainly clear" },
+      2:  { icon: "⛅",  desc: "Partly cloudy" },
+      3:  { icon: "☁️",  desc: "Overcast" },
+      45: { icon: "🌫️", desc: "Fog" },
+      48: { icon: "🌫️", desc: "Fog" },
+      51: { icon: "🌦️", desc: "Light drizzle" },
+      53: { icon: "🌦️", desc: "Drizzle" },
+      55: { icon: "🌧️", desc: "Dense drizzle" },
+      61: { icon: "🌧️", desc: "Slight rain" },
+      63: { icon: "🌧️", desc: "Rain" },
+      65: { icon: "🌧️", desc: "Heavy rain" },
+      71: { icon: "🌨️", desc: "Slight snow" },
+      73: { icon: "❄️",  desc: "Snow" },
+      75: { icon: "❄️",  desc: "Heavy snow" },
+      80: { icon: "🌦️", desc: "Rain showers" },
+      81: { icon: "🌧️", desc: "Showers" },
+      82: { icon: "🌧️", desc: "Heavy showers" },
+      95: { icon: "⛈️",  desc: "Thunderstorm" },
+      96: { icon: "⛈️",  desc: "Thunderstorm" }
+    };
 
-        let forecast = '';
-        const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-        for (let i = 1; i <= 3; i++) {
-          const d = new Date(data.daily.time[i]);
-          const day = days[d.getDay()];
-          const max = Math.round(data.daily.temperature_2m_max[i]);
-          const min = Math.round(data.daily.temperature_2m_min[i]);
-          forecast += `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #333;font-size:0.95rem;">
-            <span>${day}</span>
-            <span>${codes[data.daily.weather_code[i]] || ''}</span>
-            <span>${min}° / ${max}°</span>
-          </div>`;
-        }
+    const current = weatherMap[code] || { icon: "🌡️", desc: "Weather" };
 
-        document.getElementById('weather').innerHTML = `
-          <div class="temp">${temp}°</div>
-          <div class="desc">${codes[data.current.weather_code] || 'Weather'}</div>
-          <div style="margin-top:10px;font-size:1rem;opacity:0.85;">
-            Feels ${feels}° · Wind ${wind} km/h<br>Humidity ${humidity}%
-          </div>
-          <div style="margin-top:12px;">${forecast}</div>
-        `;
-      } catch (e) {
-        document.getElementById('weather').innerHTML = '<div class="temp">--°</div><div class="desc">Weather unavailable</div>';
-      }
+    // 3-day forecast
+    let forecast = '';
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    for (let i = 1; i <= 3; i++) {
+      const d = new Date(data.daily.time[i]);
+      const day = days[d.getDay()];
+      const max = Math.round(data.daily.temperature_2m_max[i]);
+      const min = Math.round(data.daily.temperature_2m_min[i]);
+      const dayCode = data.daily.weather_code[i];
+      const dayInfo = weatherMap[dayCode] || { icon: "🌡️", desc: "" };
+
+      forecast += `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #333; font-size:0.95rem;">
+          <span style="width:40px;">${day}</span>
+          <span style="font-size:1.3rem; width:36px; text-align:center;">${dayInfo.icon}</span>
+          <span style="flex:1; opacity:0.8; padding-left:6px;">${dayInfo.desc}</span>
+          <span>${min}° / ${max}°</span>
+        </div>`;
     }
-    loadWeather();
-    setInterval(loadWeather, 10 * 60 * 1000);
+
+    document.getElementById('weather').innerHTML = `
+      <div class="temp">${temp}°</div>
+      <div class="desc" style="font-size:1.4rem; margin-top:4px;">
+        ${current.icon} ${current.desc}
+      </div>
+      <div style="margin-top:12px; font-size:1rem; opacity:0.85; line-height:1.5;">
+        Feels ${feels}° · Wind ${wind} km/h<br>
+        Humidity ${humidity}%
+      </div>
+      <div style="margin-top:14px;">
+        ${forecast}
+      </div>
+    `;
+  } catch (e) {
+    document.getElementById('weather').innerHTML = `
+      <div class="temp">--°</div>
+      <div class="desc">Weather unavailable</div>
+    `;
+  }
+}
 
     // BUS
     async function loadBus() {
