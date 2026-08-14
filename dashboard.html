@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #111;
+      color: #eee;
+      height: 100vh;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      grid-template-rows: auto 1fr;
+      gap: 12px;
+      padding: 12px;
+    }
+    .header {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 16px;
+      background: #1a1a1a;
+      border-radius: 12px;
+    }
+    .header h1 { font-size: 1.4rem; font-weight: 600; }
+    .time { font-size: 1.6rem; font-weight: 500; }
+    .calendars {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      height: 100%;
+    }
+    .calendar-box, .side-box {
+      background: #1a1a1a;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .calendar-box h2, .side-box h2 {
+      font-size: 1rem;
+      padding: 10px 14px;
+      background: #222;
+      border-bottom: 1px solid #333;
+    }
+    iframe {
+      border: none;
+      width: 100%;
+      flex: 1;
+      background: white;
+    }
+    .side {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      height: 100%;
+    }
+    .weather {
+      padding: 16px;
+      text-align: center;
+    }
+    .weather .temp { font-size: 3rem; font-weight: 300; }
+    .weather .desc { font-size: 1.1rem; opacity: 0.8; margin-top: 4px; }
+    .departures {
+      flex: 1;
+      padding: 12px;
+      overflow: auto;
+    }
+    .departure {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #333;
+      font-size: 1.05rem;
+    }
+    .line {
+      font-weight: 700;
+      min-width: 40px;
+      color: #4fc3f7;
+    }
+    .note {
+      font-size: 0.85rem;
+      opacity: 0.6;
+      padding: 12px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Family Dashboard</h1>
+    <div class="time" id="clock"></div>
+  </div>
+
+  <div class="calendars">
+    <!-- Calendar 1 – replace the src with your own embed code -->
+    <div class="calendar-box">
+      <h2>Herman's Calendar</h2>
+      <iframe src="https://calendar.google.com/calendar/embed?src=47gh6e1c46g9etusg1vqku57fdmi0rih@import.calendar.google.com
+%40group.calendar.google.com&ctz=Europe%2FHelsinki&mode=AGENDA&showTitle=0&showNav=0&showDate=0&showPrint=0&showTabs=0&showCalendars=0&showTz=0&height=400"></iframe>
+    </div>
+
+    <!-- Calendar 2 – replace the src with your second calendar -->
+    <div class="calendar-box">
+      <h2>Family / Second Calendar</h2>
+      <iframe src="https://calendar.google.com/calendar/embed?src=47gh6e1c46g9etusg1vqku57fdmi0rih@import.calendar.google.com
+%40group.calendar.google.com&ctz=Europe%2FHelsinki&mode=AGENDA&showTitle=0&showNav=0&showDate=0&showPrint=0&showTabs=0&showCalendars=0&showTz=0&height=400"></iframe>
+    </div>
+  </div>
+
+  <div class="side">
+    <div class="side-box">
+      <h2>Weather – Helsinki</h2>
+      <div class="weather" id="weather">
+        <div class="temp">--°</div>
+        <div class="desc">Loading...</div>
+      </div>
+    </div>
+
+    <div class="side-box">
+  <h2>Bus 84 – Rudolfintie (H4097)</h2>
+  <div class="departures" id="departures">
+    <div class="note">Loading departures...</div>
+  </div>
+</div>
+    </div>
+  </div>
+
+  <script>
+    // Live clock
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clock').textContent = now.toLocaleTimeString('fi-FI', {
+        hour: '2-digit', minute: '2-digit'
+      });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Weather (Open-Meteo – free, no key)
+    async function loadWeather() {
+      try {
+        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=60.17&longitude=24.94&current=temperature_2m,weather_code&timezone=Europe%2FHelsinki');
+        const data = await res.json();
+        const temp = Math.round(data.current.temperature_2m);
+        const code = data.current.weather_code;
+
+        const descriptions = {
+          0: "Clear", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
+          45: "Fog", 48: "Fog", 51: "Light drizzle", 61: "Rain", 71: "Snow",
+          80: "Rain showers", 95: "Thunderstorm"
+        };
+
+        document.getElementById('weather').innerHTML = `
+          <div class="temp">${temp}°</div>
+          <div class="desc">${descriptions[code] || "Weather"}</div>
+        `;
+      } catch (e) {
+        document.getElementById('weather').innerHTML = `<div class="temp">--°</div><div class="desc">Weather unavailable</div>`;
+      }
+    }
+    loadWeather();
+    setInterval(loadWeather, 10 * 60 * 1000); // refresh every 10 min
+
+
+async function loadDepartures() {
+  const container = document.getElementById('departures');
+  const API_KEY = 'fb7596a828844a87933c2229abb55c31';
+
+  const query = `
+  {
+    stop(id: "HSL:1491113") {
+      name
+      stoptimesWithoutPatterns(numberOfDepartures: 8) {
+        realtimeDeparture
+        scheduledDeparture
+        realtime
+        headsign
+        trip {
+          route {
+            shortName
+          }
+        }
+      }
+    }
+  }`;
+
+  try {
+    const res = await fetch('https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'digitransit-subscription-key': API_KEY
+      },
+      body: JSON.stringify({ query })
+    });
+
+    const json = await res.json();
+    const stoptimes = json.data?.stop?.stoptimesWithoutPatterns || [];
+
+    if (stoptimes.length === 0) {
+      container.innerHTML = '<div class="note">No upcoming departures</div>';
+      return;
+    }
+
+    let html = '';
+    const now = Math.floor(Date.now() / 1000);
+
+    stoptimes.forEach(st => {
+      const departure = st.realtime ? st.realtimeDeparture : st.scheduledDeparture;
+      const minutes = Math.round((departure - (now % 86400)) / 60);
+      
+      let timeText;
+      if (minutes <= 0) timeText = 'Now';
+      else if (minutes < 60) timeText = `${minutes} min`;
+      else timeText = `${Math.floor(minutes/60)}h ${minutes%60}m`;
+
+      const line = st.trip?.route?.shortName || '?';
+      const dest = st.headsign || '';
+
+      html += `
+        <div class="departure">
+          <span class="line">${line}</span>
+          <span>${dest}</span>
+          <span>${timeText}</span>
+        </div>`;
+    });
+
+    container.innerHTML = html;
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = '<div class="note">Could not load departures</div>';
+  }
+}
+
+loadDepartures();
+setInterval(loadDepartures, 60 * 1000); // refresh every minute
+</script>
+</body>
+</html>
