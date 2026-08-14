@@ -71,13 +71,27 @@
     .events-list {
       flex: 1;
       overflow-y: auto;
-      padding: 12px 16px;
+      padding: 12px 16px 16px;
       font-size: 1.05rem;
     }
 
+    .section-header {
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #4fc3f7;
+      margin: 14px 0 8px 0;
+      opacity: 0.9;
+    }
+
+    .section-header:first-child {
+      margin-top: 0;
+    }
+
     .event-item {
-      padding: 10px 0;
-      border-bottom: 1px solid #333;
+      padding: 9px 0;
+      border-bottom: 1px solid #2a2a2a;
     }
 
     .event-item:last-child {
@@ -87,7 +101,8 @@
     .event-time {
       font-weight: 600;
       color: #4fc3f7;
-      margin-bottom: 3px;
+      margin-bottom: 2px;
+      font-size: 0.98rem;
     }
 
     .event-title {
@@ -95,8 +110,8 @@
     }
 
     .event-location {
-      font-size: 0.9rem;
-      opacity: 0.7;
+      font-size: 0.88rem;
+      opacity: 0.65;
       margin-top: 2px;
     }
 
@@ -154,10 +169,9 @@
     }
 
     .note {
-      font-size: 1rem;
+      font-size: 0.95rem;
       opacity: 0.55;
-      padding: 20px 12px;
-      text-align: center;
+      padding: 12px 0;
     }
   </style>
 </head>
@@ -168,7 +182,6 @@
   </div>
 
   <div class="calendars">
-    <!-- Aksel's Calendar -->
     <div class="calendar-box">
       <h2>Aksel's Calendar</h2>
       <div id="aksel-events" class="events-list">
@@ -176,7 +189,6 @@
       </div>
     </div>
 
-    <!-- Ivar's Calendar -->
     <div class="calendar-box">
       <h2>Ivar's Calendar</h2>
       <div id="ivar-events" class="events-list">
@@ -207,8 +219,7 @@
     function updateClock() {
       const now = new Date();
       document.getElementById('clock').textContent = now.toLocaleTimeString('fi-FI', {
-        hour: '2-digit',
-        minute: '2-digit'
+        hour: '2-digit', minute: '2-digit'
       });
     }
     setInterval(updateClock, 1000);
@@ -217,20 +228,17 @@
     // ===== WEATHER =====
     async function loadWeather() {
       const weatherEl = document.getElementById('weather');
-
       try {
         const url = 'https://api.open-meteo.com/v1/forecast' +
-          '?latitude=60.1752' +
-          '&longitude=25.0309' +
+          '?latitude=60.1752&longitude=25.0309' +
           '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m' +
           '&daily=weather_code,temperature_2m_max,temperature_2m_min' +
-          '&timezone=Europe%2FHelsinki' +
-          '&forecast_days=4';
+          '&timezone=Europe%2FHelsinki&forecast_days=4';
 
         const res = await fetch(url);
         if (!res.ok) throw new Error('Weather API error');
-
         const data = await res.json();
+
         const current = data.current;
         const daily = data.daily;
 
@@ -241,194 +249,234 @@
         const code = current.weather_code;
 
         const weatherInfo = {
-          0:  { desc: "Clear", icon: "☀️" },
-          1:  { desc: "Mainly clear", icon: "🌤️" },
-          2:  { desc: "Partly cloudy", icon: "⛅" },
-          3:  { desc: "Overcast", icon: "☁️" },
-          45: { desc: "Fog", icon: "🌫️" },
-          48: { desc: "Fog", icon: "🌫️" },
-          51: { desc: "Light drizzle", icon: "🌦️" },
-          53: { desc: "Drizzle", icon: "🌦️" },
-          55: { desc: "Dense drizzle", icon: "🌧️" },
-          61: { desc: "Slight rain", icon: "🌧️" },
-          63: { desc: "Rain", icon: "🌧️" },
-          65: { desc: "Heavy rain", icon: "🌧️" },
-          71: { desc: "Slight snow", icon: "🌨️" },
-          73: { desc: "Snow", icon: "❄️" },
-          75: { desc: "Heavy snow", icon: "❄️" },
-          80: { desc: "Rain showers", icon: "🌦️" },
-          81: { desc: "Showers", icon: "🌧️" },
-          82: { desc: "Heavy showers", icon: "🌧️" },
-          95: { desc: "Thunderstorm", icon: "⛈️" },
-          96: { desc: "Thunderstorm", icon: "⛈️" }
+          0: { desc: "Clear", icon: "☀️" },
+          1: { desc: "Mainly clear", icon: "🌤️" },
+          2: { desc: "Partly cloudy", icon: "⛅" },
+          3: { desc: "Overcast", icon: "☁️" },
+          45: { desc: "Fog", icon: "🌫️" }, 48: { desc: "Fog", icon: "🌫️" },
+          51: { desc: "Light drizzle", icon: "🌦️" }, 53: { desc: "Drizzle", icon: "🌦️" }, 55: { desc: "Dense drizzle", icon: "🌧️" },
+          61: { desc: "Slight rain", icon: "🌧️" }, 63: { desc: "Rain", icon: "🌧️" }, 65: { desc: "Heavy rain", icon: "🌧️" },
+          71: { desc: "Slight snow", icon: "🌨️" }, 73: { desc: "Snow", icon: "❄️" }, 75: { desc: "Heavy snow", icon: "❄️" },
+          80: { desc: "Rain showers", icon: "🌦️" }, 81: { desc: "Showers", icon: "🌧️" }, 82: { desc: "Heavy showers", icon: "🌧️" },
+          95: { desc: "Thunderstorm", icon: "⛈️" }, 96: { desc: "Thunderstorm", icon: "⛈️" }
         };
 
         const currentInfo = weatherInfo[code] || { desc: "Weather", icon: "🌡️" };
 
         let forecastHtml = '';
         const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
         for (let i = 1; i <= 3; i++) {
           const date = new Date(daily.time[i] + 'T12:00:00');
           const dayName = days[date.getDay()];
           const max = Math.round(daily.temperature_2m_max[i]);
           const min = Math.round(daily.temperature_2m_min[i]);
-          const dayCode = daily.weather_code[i];
-          const info = weatherInfo[dayCode] || { desc: "", icon: "🌡️" };
+          const info = weatherInfo[daily.weather_code[i]] || { desc: "", icon: "🌡️" };
 
           forecastHtml += `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid #333;">
-              <span style="width: 42px;">${dayName}</span>
-              <span style="width: 32px; text-align: center; font-size: 1.25rem;">${info.icon}</span>
-              <span style="flex: 1; opacity: 0.75; font-size: 0.95rem; padding-left: 6px;">${info.desc}</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #333;">
+              <span style="width:42px;">${dayName}</span>
+              <span style="width:32px;text-align:center;font-size:1.25rem;">${info.icon}</span>
+              <span style="flex:1;opacity:0.75;font-size:0.95rem;padding-left:6px;">${info.desc}</span>
               <span>${min}° / ${max}°</span>
-            </div>
-          `;
+            </div>`;
         }
 
         weatherEl.innerHTML = `
           <div class="temp">${temp}°</div>
           <div class="desc">${currentInfo.icon} ${currentInfo.desc}</div>
-          <div style="margin-top: 12px; font-size: 1.05rem; opacity: 0.85; line-height: 1.5;">
-            Feels like ${feels}° · Wind ${wind} km/h<br>
-            Humidity ${humidity}%
+          <div style="margin-top:12px;font-size:1.05rem;opacity:0.85;line-height:1.5;">
+            Feels like ${feels}° · Wind ${wind} km/h<br>Humidity ${humidity}%
           </div>
-          <div style="margin-top: 16px; font-size: 0.95rem;">
-            ${forecastHtml}
-          </div>
+          <div style="margin-top:16px;font-size:0.95rem;">${forecastHtml}</div>
         `;
       } catch (e) {
-        console.error('Weather error:', e);
-        weatherEl.innerHTML = `
-          <div class="temp">--°</div>
-          <div class="desc">Weather unavailable</div>
-        `;
+        console.error(e);
+        weatherEl.innerHTML = `<div class="temp">--°</div><div class="desc">Weather unavailable</div>`;
       }
     }
-
     loadWeather();
     setInterval(loadWeather, 10 * 60 * 1000);
 
-    // ===== SHARED ICS PARSER =====
+    // ===== ICS PARSER (with end time) =====
     function parseICS(icsText) {
       const events = [];
       const blocks = icsText.split('BEGIN:VEVENT');
 
       for (let i = 1; i < blocks.length; i++) {
         const block = blocks[i];
-
         const summary = (block.match(/SUMMARY:(.*)/) || [])[1]?.trim() || 'Event';
         const location = (block.match(/LOCATION:(.*)/) || [])[1]?.trim() || '';
         const dtstart = (block.match(/DTSTART[^:]*:(.*)/) || [])[1]?.trim();
+        const dtend   = (block.match(/DTEND[^:]*:(.*)/) || [])[1]?.trim();
 
         if (!dtstart) continue;
 
-        let start;
-        if (dtstart.length === 8) {
-          start = new Date(
-            dtstart.slice(0,4),
-            parseInt(dtstart.slice(4,6)) - 1,
-            dtstart.slice(6,8)
-          );
-        } else {
-          const cleaned = dtstart.replace('Z', '');
-          start = new Date(
+        const parseDate = (str) => {
+          if (!str) return null;
+          if (str.length === 8) {
+            return new Date(str.slice(0,4), parseInt(str.slice(4,6))-1, str.slice(6,8));
+          }
+          const cleaned = str.replace('Z', '');
+          return new Date(
             cleaned.slice(0,4),
-            parseInt(cleaned.slice(4,6)) - 1,
+            parseInt(cleaned.slice(4,6))-1,
             cleaned.slice(6,8),
             cleaned.slice(9,11) || 0,
             cleaned.slice(11,13) || 0
           );
-        }
+        };
 
-        events.push({ summary, location, start });
+        events.push({
+          summary,
+          location,
+          start: parseDate(dtstart),
+          end: parseDate(dtend)
+        });
       }
-
       return events;
     }
 
-    // ===== LOAD TODAY'S EVENTS FROM ICS =====
-    async function loadTodayEvents(containerId, icsUrl) {
+    function formatTime(date) {
+      if (!date) return '';
+      return date.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // ===== LOAD FULL DAY VIEW FOR ONE CHILD =====
+    async function loadChildSchedule(containerId, schoolUrl, soccerUrl) {
       const container = document.getElementById(containerId);
 
       try {
-        const res = await fetch(icsUrl);
-        if (!res.ok) throw new Error('Failed to fetch ICS');
+        // Fetch both calendars in parallel
+        const [schoolRes, soccerRes] = await Promise.all([
+          fetch(schoolUrl),
+          fetch(soccerUrl.replace('webcal://', 'https://'))
+        ]);
 
-        const text = await res.text();
-        const events = parseICS(text);
+        if (!schoolRes.ok) throw new Error('School ICS failed');
+        // Soccer may fail silently
+
+        const schoolText = await schoolRes.text();
+        const schoolEvents = parseICS(schoolText);
+
+        let soccerEvents = [];
+        if (soccerRes.ok) {
+          const soccerText = await soccerRes.text();
+          soccerEvents = parseICS(soccerText);
+        }
 
         const now = new Date();
         const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        const todayEnd   = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        const tomorrowStart = todayEnd;
+        const tomorrowEnd   = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
 
-        const todaysEvents = events
+        // Today's school events
+        const todaySchool = schoolEvents
           .filter(e => e.start >= todayStart && e.start < todayEnd)
           .sort((a, b) => a.start - b.start);
 
-        if (todaysEvents.length === 0) {
-          container.innerHTML = '<div class="note">No more events today</div>';
-          return;
-        }
+        // Today's soccer events
+        const todaySoccer = soccerEvents
+          .filter(e => e.start >= todayStart && e.start < todayEnd)
+          .sort((a, b) => a.start - b.start);
+
+        // First school event tomorrow
+        const tomorrowSchool = schoolEvents
+          .filter(e => e.start >= tomorrowStart && e.start < tomorrowEnd)
+          .sort((a, b) => a.start - b.start);
 
         let html = '';
-        todaysEvents.forEach(ev => {
-          const timeStr = ev.start.toLocaleTimeString('fi-FI', {
-            hour: '2-digit',
-            minute: '2-digit'
+
+        // === SCHOOL ===
+        html += `<div class="section-header">School</div>`;
+        if (todaySchool.length === 0) {
+          html += `<div class="note">No more school today</div>`;
+        } else {
+          todaySchool.forEach(ev => {
+            const timeRange = ev.end
+              ? `${formatTime(ev.start)} – ${formatTime(ev.end)}`
+              : formatTime(ev.start);
+
+            html += `
+              <div class="event-item">
+                <div class="event-time">${timeRange}</div>
+                <div class="event-title">${ev.summary}</div>
+                ${ev.location ? `<div class="event-location">${ev.location}</div>` : ''}
+              </div>`;
           });
+        }
+
+        // === SOCCER ===
+        html += `<div class="section-header">Soccer</div>`;
+        if (todaySoccer.length === 0) {
+          html += `<div class="note">No soccer today</div>`;
+        } else {
+          todaySoccer.forEach(ev => {
+            const timeRange = ev.end
+              ? `${formatTime(ev.start)} – ${formatTime(ev.end)}`
+              : formatTime(ev.start);
+
+            html += `
+              <div class="event-item">
+                <div class="event-time">${timeRange}</div>
+                <div class="event-title">${ev.summary}</div>
+                ${ev.location ? `<div class="event-location">${ev.location}</div>` : ''}
+              </div>`;
+          });
+        }
+
+        // === FIRST THING TOMORROW ===
+        html += `<div class="section-header">First Thing Tomorrow</div>`;
+        if (tomorrowSchool.length === 0) {
+          html += `<div class="note">No School</div>`;
+        } else {
+          const first = tomorrowSchool[0];
+          const timeRange = first.end
+            ? `${formatTime(first.start)} – ${formatTime(first.end)}`
+            : formatTime(first.start);
 
           html += `
             <div class="event-item">
-              <div class="event-time">${timeStr}</div>
-              <div class="event-title">${ev.summary}</div>
-              ${ev.location ? `<div class="event-location">${ev.location}</div>` : ''}
-            </div>
-          `;
-        });
+              <div class="event-time">${timeRange}</div>
+              <div class="event-title">${first.summary}</div>
+              ${first.location ? `<div class="event-location">${first.location}</div>` : ''}
+            </div>`;
+        }
 
         container.innerHTML = html;
+
       } catch (err) {
-        console.error('ICS error:', err);
-        container.innerHTML = `
-          <div class="note">
-            Could not load schedule<br>
-            (possible CORS or expired token)
-          </div>`;
+        console.error(err);
+        container.innerHTML = `<div class="note">Could not load schedule</div>`;
       }
     }
 
-    // Aksel's ICS
-    const AKSEL_ICS = 'https://yvkoulut.inschool.fi/schedule/export/students/167030/Wilma.ics?token=04167030xca951b62f2c0ffca02025635a42a812c&p=28&f=56&tstamp=1786682462';
-    loadTodayEvents('aksel-events', AKSEL_ICS);
-    setInterval(() => loadTodayEvents('aksel-events', AKSEL_ICS), 15 * 60 * 1000);
+    // Aksel
+    const AKSEL_SCHOOL = 'https://yvkoulut.inschool.fi/schedule/export/students/167030/Wilma.ics?token=04167030xca951b62f2c0ffca02025635a42a812c&p=28&f=56&tstamp=1786682462';
+    const AKSEL_SOCCER = 'https://id.myclub.fi/flow/calendar_subscriptions/46384.ics?token=1900f8ae39d12415a5d741d2a6d739d9edc271ad';
 
-    // Ivar's ICS
-    const IVAR_ICS = 'https://helsinki.inschool.fi/schedule/export/students/629788/Wilma.ics?token=04629788xbfa1cd9f9404e2a8196048f4b00d04db&p=28&f=56&tstamp=1786682566';
-    loadTodayEvents('ivar-events', IVAR_ICS);
-    setInterval(() => loadTodayEvents('ivar-events', IVAR_ICS), 15 * 60 * 1000);
+    // Ivar
+    const IVAR_SCHOOL  = 'https://helsinki.inschool.fi/schedule/export/students/629788/Wilma.ics?token=04629788xbfa1cd9f9404e2a8196048f4b00d04db&p=28&f=56&tstamp=1786682566';
+    const IVAR_SOCCER  = 'https://id.myclub.fi/flow/calendar_subscriptions/46330.ics?token=d7f8d00e0516158b87fbe67a4f2916a961383c18';
 
-    // ===== HSL DEPARTURES =====
+    function refreshSchedules() {
+      loadChildSchedule('aksel-events', AKSEL_SCHOOL, AKSEL_SOCCER);
+      loadChildSchedule('ivar-events',  IVAR_SCHOOL,  IVAR_SOCCER);
+    }
+
+    refreshSchedules();
+    setInterval(refreshSchedules, 15 * 60 * 1000);
+
+    // ===== BUS DEPARTURES =====
     async function loadDepartures() {
       const container = document.getElementById('departures');
       const API_KEY = 'fb7596a828844a87933c2229abb55c31';
 
-      const query = `
-      {
+      const query = `{
         stop(id: "HSL:1491171") {
-          name
           stoptimesWithoutPatterns(numberOfDepartures: 4) {
-            realtime
-            realtimeDeparture
-            scheduledDeparture
-            departureDelay
-            serviceDay
-            headsign
-            trip {
-              route {
-                shortName
-              }
-            }
+            realtime realtimeDeparture scheduledDeparture departureDelay serviceDay headsign
+            trip { route { shortName } }
           }
         }
       }`;
@@ -444,13 +492,6 @@
         });
 
         const json = await res.json();
-
-        if (json.errors) {
-          console.error(json.errors);
-          container.innerHTML = '<div class="note">API Error</div>';
-          return;
-        }
-
         const stoptimes = json.data?.stop?.stoptimesWithoutPatterns || [];
 
         if (stoptimes.length === 0) {
@@ -459,29 +500,21 @@
         }
 
         let html = '';
-
         stoptimes.forEach(st => {
-          const departureSeconds = st.realtime ? st.realtimeDeparture : st.scheduledDeparture;
-          const absoluteTime = st.serviceDay + departureSeconds;
+          const secs = st.realtime ? st.realtimeDeparture : st.scheduledDeparture;
+          const abs = st.serviceDay + secs;
+          const date = new Date(abs * 1000);
+          let timeText = date.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
 
-          const date = new Date(absoluteTime * 1000);
-          let timeText = date.toLocaleTimeString('fi-FI', {
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-
-          const delayMinutes = Math.round((st.departureDelay || 0) / 60);
-          if (delayMinutes >= 1) {
-            timeText += ` <span style="color:#ff6b6b; font-size:0.9rem;">(+${delayMinutes})</span>`;
+          const delayMin = Math.round((st.departureDelay || 0) / 60);
+          if (delayMin >= 1) {
+            timeText += ` <span style="color:#ff6b6b;font-size:0.9rem;">(+${delayMin})</span>`;
           }
-
-          const line = st.trip?.route?.shortName || '?';
-          const dest = st.headsign || '';
 
           html += `
             <div class="departure">
-              <span class="line">${line}</span>
-              <span>${dest}</span>
+              <span class="line">${st.trip?.route?.shortName || '?'}</span>
+              <span>${st.headsign || ''}</span>
               <span>${timeText}</span>
             </div>`;
         });
