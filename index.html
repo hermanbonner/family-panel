@@ -68,14 +68,6 @@
       flex-shrink: 0;
     }
 
-    iframe {
-      border: none;
-      width: 100%;
-      flex: 1;
-      background: white;
-      min-height: 0;
-    }
-
     .events-list {
       flex: 1;
       overflow-y: auto;
@@ -176,18 +168,20 @@
   </div>
 
   <div class="calendars">
-    <!-- Aksel's Calendar - loaded from Wilma ICS -->
+    <!-- Aksel's Calendar -->
     <div class="calendar-box">
       <h2>Aksel's Calendar</h2>
       <div id="aksel-events" class="events-list">
-        <div class="note">Loading school schedule...</div>
+        <div class="note">Loading...</div>
       </div>
     </div>
 
-    <!-- Ivar's Calendar - Google Calendar embed -->
+    <!-- Ivar's Calendar -->
     <div class="calendar-box">
       <h2>Ivar's Calendar</h2>
-      <iframe src="https://calendar.google.com/calendar/embed?src=YOUR_IVAR_CALENDAR_ID%40group.calendar.google.com&ctz=Europe%2FHelsinki&mode=AGENDA&showTitle=0&showNav=0&showDate=0&showPrint=0&showTabs=0&showCalendars=0&showTz=0"></iframe>
+      <div id="ivar-events" class="events-list">
+        <div class="note">Loading...</div>
+      </div>
     </div>
   </div>
 
@@ -220,7 +214,7 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // ===== WEATHER (Laajasalo) =====
+    // ===== WEATHER =====
     async function loadWeather() {
       const weatherEl = document.getElementById('weather');
 
@@ -315,59 +309,7 @@
     loadWeather();
     setInterval(loadWeather, 10 * 60 * 1000);
 
-    // ===== AKSEL SCHOOL SCHEDULE (ICS) =====
-    async function loadAkselSchedule() {
-      const container = document.getElementById('aksel-events');
-      const ICS_URL = 'https://yvkoulut.inschool.fi/schedule/export/students/167030/Wilma.ics?token=04167030xca951b62f2c0ffca02025635a42a812c&p=28&f=56&tstamp=1786682462';
-
-      try {
-        const res = await fetch(ICS_URL);
-        if (!res.ok) throw new Error('Failed to fetch ICS');
-
-        const text = await res.text();
-        const events = parseICS(text);
-
-        const now = new Date();
-        const upcoming = events
-          .filter(e => e.start >= now)
-          .sort((a, b) => a.start - b.start)
-          .slice(0, 8);
-
-        if (upcoming.length === 0) {
-          container.innerHTML = '<div class="note">No upcoming events</div>';
-          return;
-        }
-
-        let html = '';
-        upcoming.forEach(ev => {
-          const timeStr = ev.start.toLocaleString('fi-FI', {
-            weekday: 'short',
-            day: 'numeric',
-            month: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-
-          html += `
-            <div class="event-item">
-              <div class="event-time">${timeStr}</div>
-              <div class="event-title">${ev.summary}</div>
-              ${ev.location ? `<div class="event-location">${ev.location}</div>` : ''}
-            </div>
-          `;
-        });
-
-        container.innerHTML = html;
-      } catch (err) {
-        console.error('ICS error:', err);
-        container.innerHTML = `
-          <div class="note">
-            Could not load school schedule<br>
-            (possible CORS or expired token)
-          </div>`;
-      }
-    }
-
+    // ===== SHARED ICS PARSER =====
     function parseICS(icsText) {
       const events = [];
       const blocks = icsText.split('BEGIN:VEVENT');
@@ -405,8 +347,66 @@
       return events;
     }
 
-    loadAkselSchedule();
-    setInterval(loadAkselSchedule, 15 * 60 * 1000);
+    // ===== LOAD TODAY'S EVENTS FROM ICS =====
+    async function loadTodayEvents(containerId, icsUrl) {
+      const container = document.getElementById(containerId);
+
+      try {
+        const res = await fetch(icsUrl);
+        if (!res.ok) throw new Error('Failed to fetch ICS');
+
+        const text = await res.text();
+        const events = parseICS(text);
+
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
+        const todaysEvents = events
+          .filter(e => e.start >= todayStart && e.start < todayEnd)
+          .sort((a, b) => a.start - b.start);
+
+        if (todaysEvents.length === 0) {
+          container.innerHTML = '<div class="note">No more events today</div>';
+          return;
+        }
+
+        let html = '';
+        todaysEvents.forEach(ev => {
+          const timeStr = ev.start.toLocaleTimeString('fi-FI', {
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          html += `
+            <div class="event-item">
+              <div class="event-time">${timeStr}</div>
+              <div class="event-title">${ev.summary}</div>
+              ${ev.location ? `<div class="event-location">${ev.location}</div>` : ''}
+            </div>
+          `;
+        });
+
+        container.innerHTML = html;
+      } catch (err) {
+        console.error('ICS error:', err);
+        container.innerHTML = `
+          <div class="note">
+            Could not load schedule<br>
+            (possible CORS or expired token)
+          </div>`;
+      }
+    }
+
+    // Aksel's ICS
+    const AKSEL_ICS = 'https://yvkoulut.inschool.fi/schedule/export/students/167030/Wilma.ics?token=04167030xca951b62f2c0ffca02025635a42a812c&p=28&f=56&tstamp=1786682462';
+    loadTodayEvents('aksel-events', AKSEL_ICS);
+    setInterval(() => loadTodayEvents('aksel-events', AKSEL_ICS), 15 * 60 * 1000);
+
+    // Ivar's ICS
+    const IVAR_ICS = 'https://helsinki.inschool.fi/schedule/export/students/629788/Wilma.ics?token=04629788xbfa1cd9f9404e2a8196048f4b00d04db&p=28&f=56&tstamp=1786682566';
+    loadTodayEvents('ivar-events', IVAR_ICS);
+    setInterval(() => loadTodayEvents('ivar-events', IVAR_ICS), 15 * 60 * 1000);
 
     // ===== HSL DEPARTURES =====
     async function loadDepartures() {
