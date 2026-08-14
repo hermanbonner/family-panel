@@ -182,80 +182,94 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // Weather – Laajasalo + 3-day forecast
-    async function loadWeather() {
-      try {
-        const res = await fetch(
-          'https://api.open-meteo.com/v1/forecast' +
-          '?latitude=60.1752&longitude=25.0309' +
-          '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m' +
-          '&daily=weather_code,temperature_2m_max,temperature_2m_min' +
-          '&timezone=Europe%2FHelsinki' +
-          '&forecast_days=4'
-        );
-        const data = await res.json();
+    // Weather – Laajasalo + 3-day forecast with icons
+async function loadWeather() {
+  try {
+    const res = await fetch(
+      'https://api.open-meteo.com/v1/forecast' +
+      '?latitude=60.1752&longitude=25.0309' +
+      '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m' +
+      '&daily=weather_code,temperature_2m_max,temperature_2m_min' +
+      '&timezone=Europe%2FHelsinki' +
+      '&forecast_days=4'
+    );
+    const data = await res.json();
 
-        const current = data.current;
-        const daily = data.daily;
+    const current = data.current;
+    const daily = data.daily;
 
-        const temp = Math.round(current.temperature_2m);
-        const feels = Math.round(current.apparent_temperature);
-        const wind = Math.round(current.wind_speed_10m);
-        const humidity = current.relative_humidity_2m;
-        const code = current.weather_code;
+    const temp = Math.round(current.temperature_2m);
+    const feels = Math.round(current.apparent_temperature);
+    const wind = Math.round(current.wind_speed_10m);
+    const humidity = current.relative_humidity_2m;
+    const code = current.weather_code;
 
-        const descriptions = {
-          0: "Clear", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
-          45: "Fog", 48: "Fog",
-          51: "Light drizzle", 53: "Drizzle", 55: "Dense drizzle",
-          61: "Slight rain", 63: "Rain", 65: "Heavy rain",
-          71: "Slight snow", 73: "Snow", 75: "Heavy snow",
-          80: "Rain showers", 81: "Showers", 82: "Heavy showers",
-          95: "Thunderstorm", 96: "Thunderstorm"
-        };
+    const weatherInfo = {
+      0:  { desc: "Clear", icon: "☀️" },
+      1:  { desc: "Mainly clear", icon: "🌤️" },
+      2:  { desc: "Partly cloudy", icon: "⛅" },
+      3:  { desc: "Overcast", icon: "☁️" },
+      45: { desc: "Fog", icon: "🌫️" },
+      48: { desc: "Fog", icon: "🌫️" },
+      51: { desc: "Light drizzle", icon: "🌦️" },
+      53: { desc: "Drizzle", icon: "🌦️" },
+      55: { desc: "Dense drizzle", icon: "🌧️" },
+      61: { desc: "Slight rain", icon: "🌧️" },
+      63: { desc: "Rain", icon: "🌧️" },
+      65: { desc: "Heavy rain", icon: "🌧️" },
+      71: { desc: "Slight snow", icon: "🌨️" },
+      73: { desc: "Snow", icon: "❄️" },
+      75: { desc: "Heavy snow", icon: "❄️" },
+      80: { desc: "Rain showers", icon: "🌦️" },
+      81: { desc: "Showers", icon: "🌧️" },
+      82: { desc: "Heavy showers", icon: "🌧️" },
+      95: { desc: "Thunderstorm", icon: "⛈️" },
+      96: { desc: "Thunderstorm", icon: "⛈️" }
+    };
 
-        let forecastHtml = '';
-        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const currentInfo = weatherInfo[code] || { desc: "Weather", icon: "🌡️" };
 
-        for (let i = 1; i <= 3; i++) {
-          const date = new Date(daily.time[i]);
-          const dayName = days[date.getDay()];
-          const max = Math.round(daily.temperature_2m_max[i]);
-          const min = Math.round(daily.temperature_2m_min[i]);
-          const dayCode = daily.weather_code[i];
-          const dayDesc = descriptions[dayCode] || "";
+    let forecastHtml = '';
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-          forecastHtml += `
-            <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #333;">
-              <span style="width: 45px;">${dayName}</span>
-              <span style="flex: 1; opacity: 0.75; font-size: 0.95rem;">${dayDesc}</span>
-              <span>${min}° / ${max}°</span>
-            </div>
-          `;
-        }
+    for (let i = 1; i <= 3; i++) {
+      const date = new Date(daily.time[i]);
+      const dayName = days[date.getDay()];
+      const max = Math.round(daily.temperature_2m_max[i]);
+      const min = Math.round(daily.temperature_2m_min[i]);
+      const dayCode = daily.weather_code[i];
+      const info = weatherInfo[dayCode] || { desc: "", icon: "🌡️" };
 
-        document.getElementById('weather').innerHTML = `
-          <div class="temp">${temp}°</div>
-          <div class="desc">${descriptions[code] || "Weather"}</div>
-          <div style="margin-top: 12px; font-size: 1.05rem; opacity: 0.85; line-height: 1.5;">
-            Feels like ${feels}° · Wind ${wind} km/h<br>
-            Humidity ${humidity}%
-          </div>
-          <div style="margin-top: 16px; font-size: 0.95rem;">
-            ${forecastHtml}
-          </div>
-        `;
-      } catch (e) {
-        console.error(e);
-        document.getElementById('weather').innerHTML = `
-          <div class="temp">--°</div>
-          <div class="desc">Weather unavailable</div>
-        `;
-      }
+      forecastHtml += `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid #333;">
+          <span style="width: 42px;">${dayName}</span>
+          <span style="width: 32px; text-align: center; font-size: 1.25rem;">${info.icon}</span>
+          <span style="flex: 1; opacity: 0.75; font-size: 0.95rem; padding-left: 6px;">${info.desc}</span>
+          <span>${min}° / ${max}°</span>
+        </div>
+      `;
     }
-    loadWeather();
-    setInterval(loadWeather, 10 * 60 * 1000);
 
+    document.getElementById('weather').innerHTML = `
+      <div class="temp">${temp}°</div>
+      <div class="desc">${currentInfo.icon} ${currentInfo.desc}</div>
+      <div style="margin-top: 12px; font-size: 1.05rem; opacity: 0.85; line-height: 1.5;">
+        Feels like ${feels}° · Wind ${wind} km/h<br>
+        Humidity ${humidity}%
+      </div>
+      <div style="margin-top: 16px; font-size: 0.95rem;">
+        ${forecastHtml}
+      </div>
+    `;
+  } catch (e) {
+    console.error(e);
+    document.getElementById('weather').innerHTML = `
+      <div class="temp">--°</div>
+      <div class="desc">Weather unavailable</div>
+    `;
+  }
+}
+    
     // HSL Departures – Rudolfintie (only next 4)
     async function loadDepartures() {
       const container = document.getElementById('departures');
