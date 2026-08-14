@@ -76,17 +76,17 @@
     }
 
     .section-header {
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.6px;
       color: #4fc3f7;
-      margin: 14px 0 8px 0;
+      margin: 16px 0 8px 0;
       opacity: 0.9;
     }
 
     .section-header:first-child {
-      margin-top: 0;
+      margin-top: 4px;
     }
 
     .event-item {
@@ -107,6 +107,7 @@
 
     .event-title {
       font-size: 1.05rem;
+      line-height: 1.3;
     }
 
     .event-location {
@@ -171,7 +172,7 @@
     .note {
       font-size: 0.95rem;
       opacity: 0.55;
-      padding: 12px 0;
+      padding: 8px 0 4px;
     }
   </style>
 </head>
@@ -219,7 +220,8 @@
     function updateClock() {
       const now = new Date();
       document.getElementById('clock').textContent = now.toLocaleTimeString('fi-FI', {
-        hour: '2-digit', minute: '2-digit'
+        hour: '2-digit',
+        minute: '2-digit'
       });
     }
     setInterval(updateClock, 1000);
@@ -249,22 +251,33 @@
         const code = current.weather_code;
 
         const weatherInfo = {
-          0: { desc: "Clear", icon: "☀️" },
-          1: { desc: "Mainly clear", icon: "🌤️" },
-          2: { desc: "Partly cloudy", icon: "⛅" },
-          3: { desc: "Overcast", icon: "☁️" },
-          45: { desc: "Fog", icon: "🌫️" }, 48: { desc: "Fog", icon: "🌫️" },
-          51: { desc: "Light drizzle", icon: "🌦️" }, 53: { desc: "Drizzle", icon: "🌦️" }, 55: { desc: "Dense drizzle", icon: "🌧️" },
-          61: { desc: "Slight rain", icon: "🌧️" }, 63: { desc: "Rain", icon: "🌧️" }, 65: { desc: "Heavy rain", icon: "🌧️" },
-          71: { desc: "Slight snow", icon: "🌨️" }, 73: { desc: "Snow", icon: "❄️" }, 75: { desc: "Heavy snow", icon: "❄️" },
-          80: { desc: "Rain showers", icon: "🌦️" }, 81: { desc: "Showers", icon: "🌧️" }, 82: { desc: "Heavy showers", icon: "🌧️" },
-          95: { desc: "Thunderstorm", icon: "⛈️" }, 96: { desc: "Thunderstorm", icon: "⛈️" }
+          0:  { desc: "Clear", icon: "☀️" },
+          1:  { desc: "Mainly clear", icon: "🌤️" },
+          2:  { desc: "Partly cloudy", icon: "⛅" },
+          3:  { desc: "Overcast", icon: "☁️" },
+          45: { desc: "Fog", icon: "🌫️" },
+          48: { desc: "Fog", icon: "🌫️" },
+          51: { desc: "Light drizzle", icon: "🌦️" },
+          53: { desc: "Drizzle", icon: "🌦️" },
+          55: { desc: "Dense drizzle", icon: "🌧️" },
+          61: { desc: "Slight rain", icon: "🌧️" },
+          63: { desc: "Rain", icon: "🌧️" },
+          65: { desc: "Heavy rain", icon: "🌧️" },
+          71: { desc: "Slight snow", icon: "🌨️" },
+          73: { desc: "Snow", icon: "❄️" },
+          75: { desc: "Heavy snow", icon: "❄️" },
+          80: { desc: "Rain showers", icon: "🌦️" },
+          81: { desc: "Showers", icon: "🌧️" },
+          82: { desc: "Heavy showers", icon: "🌧️" },
+          95: { desc: "Thunderstorm", icon: "⛈️" },
+          96: { desc: "Thunderstorm", icon: "⛈️" }
         };
 
         const currentInfo = weatherInfo[code] || { desc: "Weather", icon: "🌡️" };
 
         let forecastHtml = '';
         const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
         for (let i = 1; i <= 3; i++) {
           const date = new Date(daily.time[i] + 'T12:00:00');
           const dayName = days[date.getDay()];
@@ -285,83 +298,99 @@
           <div class="temp">${temp}°</div>
           <div class="desc">${currentInfo.icon} ${currentInfo.desc}</div>
           <div style="margin-top:12px;font-size:1.05rem;opacity:0.85;line-height:1.5;">
-            Feels like ${feels}° · Wind ${wind} km/h<br>Humidity ${humidity}%
+            Feels like ${feels}° · Wind ${wind} km/h<br>
+            Humidity ${humidity}%
           </div>
-          <div style="margin-top:16px;font-size:0.95rem;">${forecastHtml}</div>
+          <div style="margin-top:16px;font-size:0.95rem;">
+            ${forecastHtml}
+          </div>
         `;
       } catch (e) {
-        console.error(e);
-        weatherEl.innerHTML = `<div class="temp">--°</div><div class="desc">Weather unavailable</div>`;
+        console.error('Weather error:', e);
+        weatherEl.innerHTML = `
+          <div class="temp">--°</div>
+          <div class="desc">Weather unavailable</div>
+        `;
       }
     }
     loadWeather();
     setInterval(loadWeather, 10 * 60 * 1000);
 
-    // ===== ICS PARSER (with end time) =====
+    // ===== ICS PARSER =====
     function parseICS(icsText) {
       const events = [];
       const blocks = icsText.split('BEGIN:VEVENT');
 
       for (let i = 1; i < blocks.length; i++) {
         const block = blocks[i];
-        const summary = (block.match(/SUMMARY:(.*)/) || [])[1]?.trim() || 'Event';
-        const location = (block.match(/LOCATION:(.*)/) || [])[1]?.trim() || '';
-        const dtstart = (block.match(/DTSTART[^:]*:(.*)/) || [])[1]?.trim();
-        const dtend   = (block.match(/DTEND[^:]*:(.*)/) || [])[1]?.trim();
+
+        const summaryMatch = block.match(/SUMMARY(?:;[^:]*)?:(.*)/);
+        const locationMatch = block.match(/LOCATION(?:;[^:]*)?:(.*)/);
+        const dtstartMatch = block.match(/DTSTART(?:;[^:]*)?:(.*)/);
+        const dtendMatch   = block.match(/DTEND(?:;[^:]*)?:(.*)/);
+
+        const summary  = summaryMatch  ? summaryMatch[1].trim()  : 'Event';
+        const location = locationMatch ? locationMatch[1].trim() : '';
+        const dtstart  = dtstartMatch  ? dtstartMatch[1].trim()  : null;
+        const dtend    = dtendMatch    ? dtendMatch[1].trim()    : null;
 
         if (!dtstart) continue;
 
         const parseDate = (str) => {
           if (!str) return null;
-          if (str.length === 8) {
-            return new Date(str.slice(0,4), parseInt(str.slice(4,6))-1, str.slice(6,8));
+          // Remove any trailing Z or timezone info for simplicity
+          const cleaned = str.replace(/Z$/, '').replace(/T/, '');
+          if (cleaned.length >= 8) {
+            const year  = parseInt(cleaned.slice(0, 4));
+            const month = parseInt(cleaned.slice(4, 6)) - 1;
+            const day   = parseInt(cleaned.slice(6, 8));
+            const hour  = cleaned.length >= 10 ? parseInt(cleaned.slice(8, 10)) : 0;
+            const min   = cleaned.length >= 12 ? parseInt(cleaned.slice(10, 12)) : 0;
+            return new Date(year, month, day, hour, min);
           }
-          const cleaned = str.replace('Z', '');
-          return new Date(
-            cleaned.slice(0,4),
-            parseInt(cleaned.slice(4,6))-1,
-            cleaned.slice(6,8),
-            cleaned.slice(9,11) || 0,
-            cleaned.slice(11,13) || 0
-          );
+          return null;
         };
 
-        events.push({
-          summary,
-          location,
-          start: parseDate(dtstart),
-          end: parseDate(dtend)
-        });
+        const start = parseDate(dtstart);
+        const end   = parseDate(dtend);
+
+        if (start) {
+          events.push({ summary, location, start, end });
+        }
       }
       return events;
     }
 
     function formatTime(date) {
       if (!date) return '';
-      return date.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString('fi-FI', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
     }
 
-    // ===== LOAD FULL DAY VIEW FOR ONE CHILD =====
+    // ===== LOAD CHILD SCHEDULE =====
     async function loadChildSchedule(containerId, schoolUrl, soccerUrl) {
       const container = document.getElementById(containerId);
 
       try {
-        // Fetch both calendars in parallel
-        const [schoolRes, soccerRes] = await Promise.all([
-          fetch(schoolUrl),
-          fetch(soccerUrl.replace('webcal://', 'https://'))
-        ]);
-
-        if (!schoolRes.ok) throw new Error('School ICS failed');
-        // Soccer may fail silently
-
+        // --- School (required) ---
+        const schoolRes = await fetch(schoolUrl);
+        if (!schoolRes.ok) throw new Error('School calendar failed');
         const schoolText = await schoolRes.text();
         const schoolEvents = parseICS(schoolText);
 
+        // --- Soccer (optional + CORS proxy) ---
         let soccerEvents = [];
-        if (soccerRes.ok) {
-          const soccerText = await soccerRes.text();
-          soccerEvents = parseICS(soccerText);
+        try {
+          const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(soccerUrl);
+          const soccerRes = await fetch(proxyUrl);
+          if (soccerRes.ok) {
+            const soccerText = await soccerRes.text();
+            soccerEvents = parseICS(soccerText);
+          }
+        } catch (e) {
+          console.warn('Soccer calendar could not be loaded:', e);
         }
 
         const now = new Date();
@@ -370,164 +399,20 @@
         const tomorrowStart = todayEnd;
         const tomorrowEnd   = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
 
-        // Today's school events
         const todaySchool = schoolEvents
           .filter(e => e.start >= todayStart && e.start < todayEnd)
           .sort((a, b) => a.start - b.start);
 
-        // Today's soccer events
         const todaySoccer = soccerEvents
           .filter(e => e.start >= todayStart && e.start < todayEnd)
           .sort((a, b) => a.start - b.start);
 
-        // First school event tomorrow
         const tomorrowSchool = schoolEvents
           .filter(e => e.start >= tomorrowStart && e.start < tomorrowEnd)
           .sort((a, b) => a.start - b.start);
 
         let html = '';
 
-        // === SCHOOL ===
+        // ===== SCHOOL =====
         html += `<div class="section-header">School</div>`;
-        if (todaySchool.length === 0) {
-          html += `<div class="note">No more school today</div>`;
-        } else {
-          todaySchool.forEach(ev => {
-            const timeRange = ev.end
-              ? `${formatTime(ev.start)} – ${formatTime(ev.end)}`
-              : formatTime(ev.start);
-
-            html += `
-              <div class="event-item">
-                <div class="event-time">${timeRange}</div>
-                <div class="event-title">${ev.summary}</div>
-                ${ev.location ? `<div class="event-location">${ev.location}</div>` : ''}
-              </div>`;
-          });
-        }
-
-        // === SOCCER ===
-        html += `<div class="section-header">Soccer</div>`;
-        if (todaySoccer.length === 0) {
-          html += `<div class="note">No soccer today</div>`;
-        } else {
-          todaySoccer.forEach(ev => {
-            const timeRange = ev.end
-              ? `${formatTime(ev.start)} – ${formatTime(ev.end)}`
-              : formatTime(ev.start);
-
-            html += `
-              <div class="event-item">
-                <div class="event-time">${timeRange}</div>
-                <div class="event-title">${ev.summary}</div>
-                ${ev.location ? `<div class="event-location">${ev.location}</div>` : ''}
-              </div>`;
-          });
-        }
-
-        // === FIRST THING TOMORROW ===
-        html += `<div class="section-header">First Thing Tomorrow</div>`;
-        if (tomorrowSchool.length === 0) {
-          html += `<div class="note">No School</div>`;
-        } else {
-          const first = tomorrowSchool[0];
-          const timeRange = first.end
-            ? `${formatTime(first.start)} – ${formatTime(first.end)}`
-            : formatTime(first.start);
-
-          html += `
-            <div class="event-item">
-              <div class="event-time">${timeRange}</div>
-              <div class="event-title">${first.summary}</div>
-              ${first.location ? `<div class="event-location">${first.location}</div>` : ''}
-            </div>`;
-        }
-
-        container.innerHTML = html;
-
-      } catch (err) {
-        console.error(err);
-        container.innerHTML = `<div class="note">Could not load schedule</div>`;
-      }
-    }
-
-    // Aksel
-    const AKSEL_SCHOOL = 'https://yvkoulut.inschool.fi/schedule/export/students/167030/Wilma.ics?token=04167030xca951b62f2c0ffca02025635a42a812c&p=28&f=56&tstamp=1786682462';
-    const AKSEL_SOCCER = 'https://id.myclub.fi/flow/calendar_subscriptions/46384.ics?token=1900f8ae39d12415a5d741d2a6d739d9edc271ad';
-
-    // Ivar
-    const IVAR_SCHOOL  = 'https://helsinki.inschool.fi/schedule/export/students/629788/Wilma.ics?token=04629788xbfa1cd9f9404e2a8196048f4b00d04db&p=28&f=56&tstamp=1786682566';
-    const IVAR_SOCCER  = 'https://id.myclub.fi/flow/calendar_subscriptions/46330.ics?token=d7f8d00e0516158b87fbe67a4f2916a961383c18';
-
-    function refreshSchedules() {
-      loadChildSchedule('aksel-events', AKSEL_SCHOOL, AKSEL_SOCCER);
-      loadChildSchedule('ivar-events',  IVAR_SCHOOL,  IVAR_SOCCER);
-    }
-
-    refreshSchedules();
-    setInterval(refreshSchedules, 15 * 60 * 1000);
-
-    // ===== BUS DEPARTURES =====
-    async function loadDepartures() {
-      const container = document.getElementById('departures');
-      const API_KEY = 'fb7596a828844a87933c2229abb55c31';
-
-      const query = `{
-        stop(id: "HSL:1491171") {
-          stoptimesWithoutPatterns(numberOfDepartures: 4) {
-            realtime realtimeDeparture scheduledDeparture departureDelay serviceDay headsign
-            trip { route { shortName } }
-          }
-        }
-      }`;
-
-      try {
-        const res = await fetch('https://api.digitransit.fi/routing/v2/hsl/gtfs/v1', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'digitransit-subscription-key': API_KEY
-          },
-          body: JSON.stringify({ query })
-        });
-
-        const json = await res.json();
-        const stoptimes = json.data?.stop?.stoptimesWithoutPatterns || [];
-
-        if (stoptimes.length === 0) {
-          container.innerHTML = '<div class="note">No upcoming departures</div>';
-          return;
-        }
-
-        let html = '';
-        stoptimes.forEach(st => {
-          const secs = st.realtime ? st.realtimeDeparture : st.scheduledDeparture;
-          const abs = st.serviceDay + secs;
-          const date = new Date(abs * 1000);
-          let timeText = date.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
-
-          const delayMin = Math.round((st.departureDelay || 0) / 60);
-          if (delayMin >= 1) {
-            timeText += ` <span style="color:#ff6b6b;font-size:0.9rem;">(+${delayMin})</span>`;
-          }
-
-          html += `
-            <div class="departure">
-              <span class="line">${st.trip?.route?.shortName || '?'}</span>
-              <span>${st.headsign || ''}</span>
-              <span>${timeText}</span>
-            </div>`;
-        });
-
-        container.innerHTML = html;
-      } catch (err) {
-        console.error(err);
-        container.innerHTML = '<div class="note">Could not load departures</div>';
-      }
-    }
-
-    loadDepartures();
-    setInterval(loadDepartures, 60 * 1000);
-  </script>
-</body>
-</html>
+        if (todaySchool.length === 0
