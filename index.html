@@ -393,83 +393,96 @@
     }
 
     async function loadChild(id, schoolUrl, soccerUrl) {
-      const el = document.getElementById(id);
-      try {
-        const schoolRes = await fetch(schoolUrl);
-        const school = parseICS(await schoolRes.text());
+  const el = document.getElementById(id);
+  try {
+    const schoolRes = await fetch(schoolUrl);
+    const school = parseICS(await schoolRes.text());
 
-        let soccer = [];
-        try {
-          const proxy = 'https://corsproxy.io/?' + encodeURIComponent(soccerUrl);
-          const sRes = await fetch(proxy);
-          if (sRes.ok) soccer = parseICS(await sRes.text());
-        } catch (e) {}
+    let soccer = [];
+    try {
+      const proxy = 'https://corsproxy.io/?' + encodeURIComponent(soccerUrl);
+      const sRes = await fetch(proxy);
+      if (sRes.ok) soccer = parseICS(await sRes.text());
+    } catch (e) {}
 
-        const now = new Date();
-        const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const today1 = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-        const tom1  = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
+    const now = new Date();
+    const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const today1 = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const tom1  = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
 
-        const todaySchool = school.filter(e => e.start >= today0 && e.start < today1).sort((a,b) => a.start - b.start);
-        const todaySoccer = soccer.filter(e => e.start >= today0 && e.start < today1).sort((a,b) => a.start - b.start);
+    // Helper: keep event only if it ended less than 1 hour ago (or hasn't ended yet)
+    const stillRelevant = (e) => {
+      const endTime = e.end ? e.end : e.start;           // fallback to start if no end
+      const hideAfter = new Date(endTime.getTime() + 60 * 60 * 1000); // +1 hour
+      return now < hideAfter;
+    };
 
-        // Combined tomorrow events (earliest from school OR soccer)
-        const tomorrowEvents = [
-          ...school.filter(e => e.start >= today1 && e.start < tom1),
-          ...soccer.filter(e => e.start >= today1 && e.start < tom1)
-        ].sort((a, b) => a.start - b.start);
+    // Today's events (only those that ended < 1h ago)
+    const todaySchool = school
+      .filter(e => e.start >= today0 && e.start < today1 && stillRelevant(e))
+      .sort((a, b) => a.start - b.start);
 
-        let html = '';
+    const todaySoccer = soccer
+      .filter(e => e.start >= today0 && e.start < today1 && stillRelevant(e))
+      .sort((a, b) => a.start - b.start);
 
-        // School
-        html += `<div class="section-header">School</div>`;
-        if (todaySchool.length === 0) {
-          html += `<div class="note">No more school today</div>`;
-        } else {
-          todaySchool.forEach(e => {
-            const t = e.end ? `${fmt(e.start)} – ${fmt(e.end)}` : fmt(e.start);
-            html += `<div class="event-item">
-              <div class="event-time">${t}</div>
-              <div class="event-title">${e.summary}</div>
-              ${e.location ? `<div class="event-location">${e.location}</div>` : ''}
-            </div>`;
-          });
-        }
+    // Tomorrow's events (combined, earliest first)
+    const tomorrowEvents = [
+      ...school.filter(e => e.start >= today1 && e.start < tom1),
+      ...soccer.filter(e => e.start >= today1 && e.start < tom1)
+    ].sort((a, b) => a.start - b.start);
 
-        // Soccer
-        html += `<div class="section-header">Soccer</div>`;
-        if (todaySoccer.length === 0) {
-          html += `<div class="note">No soccer today</div>`;
-        } else {
-          todaySoccer.forEach(e => {
-            const t = e.end ? `${fmt(e.start)} – ${fmt(e.end)}` : fmt(e.start);
-            html += `<div class="event-item">
-              <div class="event-time">${t}</div>
-              <div class="event-title">${e.summary}</div>
-              ${e.location ? `<div class="event-location">${e.location}</div>` : ''}
-            </div>`;
-          });
-        }
+    let html = '';
 
-        // First Thing Tomorrow
-        html += `<div class="section-header">First Thing Tomorrow</div>`;
-        if (tomorrowEvents.length === 0) {
-          html += `<div class="note">No activities scheduled.</div>`;
-        } else {
-          const e = tomorrowEvents[0];
-          const t = e.end ? `${fmt(e.start)} – ${fmt(e.end)}` : fmt(e.start);
-          html += `<div class="event-item">
-            <div class="event-time">${t}</div>
-            <div class="event-title">${e.summary}</div>
-            ${e.location ? `<div class="event-location">${e.location}</div>` : ''}
-          </div>`;
-        }
-
-        el.innerHTML = html;
-      } catch (err) {
-        el.innerHTML = `<div class="note">Could not load schedule</div>`;
-      }
+    // School
+    html += `<div class="section-header">School</div>`;
+    if (todaySchool.length === 0) {
+      html += `<div class="note">No more school today</div>`;
+    } else {
+      todaySchool.forEach(e => {
+        const t = e.end ? `${fmt(e.start)} – ${fmt(e.end)}` : fmt(e.start);
+        html += `<div class="event-item">
+          <div class="event-time">${t}</div>
+          <div class="event-title">${e.summary}</div>
+          ${e.location ? `<div class="event-location">${e.location}</div>` : ''}
+        </div>`;
+      });
     }
+
+    // Soccer
+    html += `<div class="section-header">Soccer</div>`;
+    if (todaySoccer.length === 0) {
+      html += `<div class="note">No soccer today</div>`;
+    } else {
+      todaySoccer.forEach(e => {
+        const t = e.end ? `${fmt(e.start)} – ${fmt(e.end)}` : fmt(e.start);
+        html += `<div class="event-item">
+          <div class="event-time">${t}</div>
+          <div class="event-title">${e.summary}</div>
+          ${e.location ? `<div class="event-location">${e.location}</div>` : ''}
+        </div>`;
+      });
+    }
+
+    // First Thing Tomorrow
+    html += `<div class="section-header">First Thing Tomorrow</div>`;
+    if (tomorrowEvents.length === 0) {
+      html += `<div class="note">No activities scheduled.</div>`;
+    } else {
+      const e = tomorrowEvents[0];
+      const t = e.end ? `${fmt(e.start)} – ${fmt(e.end)}` : fmt(e.start);
+      html += `<div class="event-item">
+        <div class="event-time">${t}</div>
+        <div class="event-title">${e.summary}</div>
+        ${e.location ? `<div class="event-location">${e.location}</div>` : ''}
+      </div>`;
+    }
+
+    el.innerHTML = html;
+  } catch (err) {
+    el.innerHTML = `<div class="note">Could not load schedule</div>`;
+  }
+}
 
     const AKSEL_SCHOOL = 'https://yvkoulut.inschool.fi/schedule/export/students/167030/Wilma.ics?token=04167030xca951b62f2c0ffca02025635a42a812c&p=28&f=56&tstamp=1786682462';
     const AKSEL_SOCCER = 'https://id.myclub.fi/flow/calendar_subscriptions/46384.ics?token=1900f8ae39d12415a5d741d2a6d739d9edc271ad';
