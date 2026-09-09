@@ -398,12 +398,23 @@
     const schoolRes = await fetch(schoolUrl);
     const school = parseICS(await schoolRes.text());
 
-    let soccer = [];
-    try {
-      const proxy = 'https://corsproxy.io/?' + encodeURIComponent(soccerUrl);
-      const sRes = await fetch(proxy);
-      if (sRes.ok) soccer = parseICS(await sRes.text());
-    } catch (e) {}
+        let soccer = [];
+        const soccerUrls = [
+          soccerUrl,
+          'https://api.allorigins.win/raw?url=' + encodeURIComponent(soccerUrl),
+          'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(soccerUrl)
+        ];
+        for (const url of soccerUrls) {
+          try {
+            const sRes = await fetch(url);
+            if (!sRes.ok) continue;
+            const text = await sRes.text();
+            if (text.includes('BEGIN:VEVENT') || text.includes('BEGIN:VCALENDAR')) {
+              soccer = parseICS(text);
+              break;
+            }
+          } catch (e) {}
+        }
 
     const now = new Date();
     const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
