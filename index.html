@@ -110,6 +110,8 @@
     </div>
   </div>
   <script>
+    const PROXY = 'https://calendar-proxy.hermanbonner.workers.dev/?url=';
+
     const fixedHolidays = {
       "01-01": "New Year's Day", "01-06": "Epiphany", "02-05": "Runeberg Day",
       "02-28": "Kalevala Day", "03-19": "Minna Canth Day", "04-09": "Mikael Agricola Day",
@@ -237,8 +239,7 @@
           val.split(',').forEach(function(x) { ex[x.replace('Z','')] = true; });
         });
         const pushOcc = function(occStart) {
-          const key = dateKey(occStart);
-          if (ex[key]) return;
+          if (ex[dateKey(occStart)]) return;
           events.push({
             summary: summary,
             location: location,
@@ -276,15 +277,18 @@
       try {
         const schoolRes = await fetchWithTimeout(schoolUrl, 8000);
         const school = parseICS(await schoolRes.text());
+
         let soccer = [];
         try {
-          const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(soccerUrl);
-          const sRes = await fetchWithTimeout(proxy, 4000);
+          const sRes = await fetchWithTimeout(PROXY + encodeURIComponent(soccerUrl), 8000);
           if (sRes.ok) {
             const text = await sRes.text();
-            if (text.indexOf('BEGIN:VCALENDAR') !== -1 || text.indexOf('BEGIN:VEVENT') !== -1) soccer = parseICS(text);
+            if (text.indexOf('BEGIN:VCALENDAR') !== -1 || text.indexOf('BEGIN:VEVENT') !== -1) {
+              soccer = parseICS(text);
+            }
           }
         } catch (e) {}
+
         const now = new Date();
         const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const today1 = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
@@ -298,6 +302,7 @@
         const tomorrowEvents = school.filter(function(e){ return e.start >= today1 && e.start < tom1; })
           .concat(soccer.filter(function(e){ return e.start >= today1 && e.start < tom1; }))
           .sort(function(a,b){ return a.start-b.start; });
+
         let html = '';
         html += '<div class="section-header">School</div>';
         if (!todaySchool.length) html += '<div class="note">No more school today</div>';
