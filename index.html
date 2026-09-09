@@ -186,7 +186,6 @@
   </div>
 
   <script>
-    // ===== HOLIDAYS =====
     const fixedHolidays = {
       "01-01": "New Year's Day",
       "01-06": "Epiphany",
@@ -219,7 +218,6 @@
         return d;
       };
 
-      // Easter
       const a = year % 19, b = Math.floor(year / 100), c = year % 100;
       const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
       const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
@@ -235,19 +233,16 @@
       result[formatKey(addDays(easter, 39))] = "Ascension Day";
       result[formatKey(addDays(easter, 49))] = "Pentecost";
 
-      // Mother's Day
       const may1 = new Date(year, 4, 1);
       const motherDay = new Date(year, 4, 1 + ((7 - may1.getDay()) % 7) + 7);
       result[formatKey(motherDay)] = "Mother's Day";
 
-      // Father's Day
       const nov1 = new Date(year, 10, 1);
       const fatherDay = new Date(year, 10, 1 + ((7 - nov1.getDay()) % 7) + 7);
       result[formatKey(fatherDay)] = "Father's Day";
 
-      // Midsummer
-      for (let d = 20; d <= 26; d++) {
-        const mid = new Date(year, 5, d);
+      for (let n = 20; n <= 26; n++) {
+        const mid = new Date(year, 5, n);
         if (mid.getDay() === 6) {
           result[formatKey(mid)] = "Midsummer Day";
           result[formatKey(addDays(mid, -1))] = "Midsummer Eve";
@@ -255,14 +250,12 @@
         }
       }
 
-      // Nature Day
       const aug31 = new Date(year, 7, 31);
       const natureDay = new Date(year, 7, 31 - ((aug31.getDay() + 1) % 7));
       result[formatKey(natureDay)] = "Finnish Nature Day";
 
-      // All Saints' Day
-      for (let d = 31; d <= 37; d++) {
-        const check = new Date(year, 9, d);
+      for (let n = 31; n <= 37; n++) {
+        const check = new Date(year, 9, n);
         if (check.getDay() === 6) {
           result[formatKey(check)] = "All Saints' Day";
           break;
@@ -295,7 +288,6 @@
     setInterval(updateDateTime, 1000);
     updateDateTime();
 
-    // ===== WEATHER (wind in m/s) =====
     async function loadWeather() {
       try {
         const res = await fetch(
@@ -309,7 +301,7 @@
 
         const temp = Math.round(data.current.temperature_2m);
         const feels = Math.round(data.current.apparent_temperature);
-        const wind = (data.current.wind_speed_10m / 3.6).toFixed(1); // m/s
+        const wind = (data.current.wind_speed_10m / 3.6).toFixed(1);
         const humidity = data.current.relative_humidity_2m;
         const code = data.current.weather_code;
 
@@ -326,15 +318,14 @@
         };
 
         const current = weatherMap[code] || { icon: "🌡️", desc: "Weather" };
-
         let forecast = '';
         const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
         for (let i = 1; i <= 3; i++) {
-          const d = new Date(data.daily.time[i]);
-          const dayName = days[d.getDay()];
+          const dt = new Date(data.daily.time[i]);
+          const dayName = days[dt.getDay()];
           const max = Math.round(data.daily.temperature_2m_max[i]);
           const min = Math.round(data.daily.temperature_2m_min[i]);
-          const windMax = (data.daily.wind_speed_10m_max[i] / 3.6).toFixed(1); // m/s
+          const windMax = (data.daily.wind_speed_10m_max[i] / 3.6).toFixed(1);
           const dayInfo = weatherMap[data.daily.weather_code[i]] || { icon: "🌡️", desc: "" };
 
           forecast += `
@@ -364,7 +355,6 @@
     loadWeather();
     setInterval(loadWeather, 10 * 60 * 1000);
 
-    // ===== ICS PARSER + CALENDARS =====
     function parseICS(text) {
       const events = [];
       const parts = text.split('BEGIN:VEVENT');
@@ -392,108 +382,90 @@
       return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
     }
 
+    function fetchWithTimeout(url, ms) {
+      const ctrl = new AbortController();
+      const t = setTimeout(function() { ctrl.abort(); }, ms);
+      return fetch(url, { signal: ctrl.signal }).finally(function() { clearTimeout(t); });
+    }
+
     async function loadChild(id, schoolUrl, soccerUrl) {
-  const el = document.getElementById(id);
-  try {
-    const schoolRes = await fetch(schoolUrl);
-    const school = parseICS(await schoolRes.text());
+      const el = document.getElementById(id);
+      try {
+        const schoolRes = await fetchWithTimeout(schoolUrl, 8000);
+        const school = parseICS(await schoolRes.text());
 
         let soccer = [];
-        const soccerUrls = [
-          soccerUrl,
-          'https://api.allorigins.win/raw?url=' + encodeURIComponent(soccerUrl),
-          'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(soccerUrl)
-        ];
-        for (const url of soccerUrls) {
-          try {
-            const sRes = await fetch(url);
-            if (!sRes.ok) continue;
+        try {
+          const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(soccerUrl);
+          const sRes = await fetchWithTimeout(proxy, 4000);
+          if (sRes.ok) {
             const text = await sRes.text();
-            if (text.includes('BEGIN:VEVENT') || text.includes('BEGIN:VCALENDAR')) {
+            if (text.indexOf('BEGIN:VCALENDAR') !== -1 || text.indexOf('BEGIN:VEVENT') !== -1) {
               soccer = parseICS(text);
-              break;
             }
-          } catch (e) {}
+          }
+        } catch (e) {}
+
+        const now = new Date();
+        const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const today1 = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        const tom1  = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
+
+        const stillRelevant = function(e) {
+          const endTime = e.end ? e.end : e.start;
+          return now < new Date(endTime.getTime() + 60 * 60 * 1000);
+        };
+
+        const todaySchool = school.filter(function(e) {
+          return e.start >= today0 && e.start < today1 && stillRelevant(e);
+        }).sort(function(a,b) { return a.start - b.start; });
+
+        const todaySoccer = soccer.filter(function(e) {
+          return e.start >= today0 && e.start < today1 && stillRelevant(e);
+        }).sort(function(a,b) { return a.start - b.start; });
+
+        const tomorrowEvents = school.filter(function(e) {
+          return e.start >= today1 && e.start < tom1;
+        }).concat(soccer.filter(function(e) {
+          return e.start >= today1 && e.start < tom1;
+        })).sort(function(a,b) { return a.start - b.start; });
+
+        let html = '';
+
+        html += '<div class="section-header">School</div>';
+        if (todaySchool.length === 0) {
+          html += '<div class="note">No more school today</div>';
+        } else {
+          todaySchool.forEach(function(e) {
+            const t = e.end ? fmt(e.start) + ' – ' + fmt(e.end) : fmt(e.start);
+            html += '<div class="event-item"><div class="event-time">' + t + '</div><div class="event-title">' + e.summary + '</div>' + (e.location ? '<div class="event-location">' + e.location + '</div>' : '') + '</div>';
+          });
         }
 
-    const now = new Date();
-    const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const today1 = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-    const tom1  = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
+        html += '<div class="section-header">Soccer</div>';
+        if (todaySoccer.length === 0) {
+          html += '<div class="note">No soccer today</div>';
+        } else {
+          todaySoccer.forEach(function(e) {
+            const t = e.end ? fmt(e.start) + ' – ' + fmt(e.end) : fmt(e.start);
+            html += '<div class="event-item"><div class="event-time">' + t + '</div><div class="event-title">' + e.summary + '</div>' + (e.location ? '<div class="event-location">' + e.location + '</div>' : '') + '</div>';
+          });
+        }
 
-    // Helper: keep event only if it ended less than 1 hour ago (or hasn't ended yet)
-    const stillRelevant = (e) => {
-      const endTime = e.end ? e.end : e.start;           // fallback to start if no end
-      const hideAfter = new Date(endTime.getTime() + 60 * 60 * 1000); // +1 hour
-      return now < hideAfter;
-    };
+        html += '<div class="section-header">First Thing Tomorrow</div>';
+        if (tomorrowEvents.length === 0) {
+          html += '<div class="note">No activities scheduled.</div>';
+        } else {
+          const e = tomorrowEvents[0];
+          const t = e.end ? fmt(e.start) + ' – ' + fmt(e.end) : fmt(e.start);
+          html += '<div class="event-item"><div class="event-time">' + t + '</div><div class="event-title">' + e.summary + '</div>' + (e.location ? '<div class="event-location">' + e.location + '</div>' : '') + '</div>';
+        }
 
-    // Today's events (only those that ended < 1h ago)
-    const todaySchool = school
-      .filter(e => e.start >= today0 && e.start < today1 && stillRelevant(e))
-      .sort((a, b) => a.start - b.start);
-
-    const todaySoccer = soccer
-      .filter(e => e.start >= today0 && e.start < today1 && stillRelevant(e))
-      .sort((a, b) => a.start - b.start);
-
-    // Tomorrow's events (combined, earliest first)
-    const tomorrowEvents = [
-      ...school.filter(e => e.start >= today1 && e.start < tom1),
-      ...soccer.filter(e => e.start >= today1 && e.start < tom1)
-    ].sort((a, b) => a.start - b.start);
-
-    let html = '';
-
-    // School
-    html += `<div class="section-header">School</div>`;
-    if (todaySchool.length === 0) {
-      html += `<div class="note">No more school today</div>`;
-    } else {
-      todaySchool.forEach(e => {
-        const t = e.end ? `${fmt(e.start)} – ${fmt(e.end)}` : fmt(e.start);
-        html += `<div class="event-item">
-          <div class="event-time">${t}</div>
-          <div class="event-title">${e.summary}</div>
-          ${e.location ? `<div class="event-location">${e.location}</div>` : ''}
-        </div>`;
-      });
+        el.innerHTML = html;
+      } catch (err) {
+        el.innerHTML = '<div class="note">Could not load schedule</div>';
+      }
     }
-
-    // Soccer
-    html += `<div class="section-header">Soccer</div>`;
-    if (todaySoccer.length === 0) {
-      html += `<div class="note">No soccer today</div>`;
-    } else {
-      todaySoccer.forEach(e => {
-        const t = e.end ? `${fmt(e.start)} – ${fmt(e.end)}` : fmt(e.start);
-        html += `<div class="event-item">
-          <div class="event-time">${t}</div>
-          <div class="event-title">${e.summary}</div>
-          ${e.location ? `<div class="event-location">${e.location}</div>` : ''}
-        </div>`;
-      });
-    }
-
-    // First Thing Tomorrow
-    html += `<div class="section-header">First Thing Tomorrow</div>`;
-    if (tomorrowEvents.length === 0) {
-      html += `<div class="note">No activities scheduled.</div>`;
-    } else {
-      const e = tomorrowEvents[0];
-      const t = e.end ? `${fmt(e.start)} – ${fmt(e.end)}` : fmt(e.start);
-      html += `<div class="event-item">
-        <div class="event-time">${t}</div>
-        <div class="event-title">${e.summary}</div>
-        ${e.location ? `<div class="event-location">${e.location}</div>` : ''}
-      </div>`;
-    }
-
-    el.innerHTML = html;
-  } catch (err) {
-    el.innerHTML = `<div class="note">Could not load schedule</div>`;
-  }
-}
 
     const AKSEL_SCHOOL = 'https://yvkoulut.inschool.fi/schedule/export/students/167030/Wilma.ics?token=04167030xca951b62f2c0ffca02025635a42a812c&p=28&f=56&tstamp=1786682462';
     const AKSEL_SOCCER = 'https://id.myclub.fi/flow/calendar_subscriptions/46384.ics?token=1900f8ae39d12415a5d741d2a6d739d9edc271ad';
@@ -507,7 +479,6 @@
     refreshCalendars();
     setInterval(refreshCalendars, 15 * 60 * 1000);
 
-    // ===== BUS =====
     async function loadBus() {
       try {
         const res = await fetch('https://api.digitransit.fi/routing/v2/hsl/gtfs/v1', {
@@ -517,11 +488,11 @@
             'digitransit-subscription-key': 'fb7596a828844a87933c2229abb55c31'
           },
           body: JSON.stringify({
-            query: `{ stop(id: "HSL:1491171") { stoptimesWithoutPatterns(numberOfDepartures: 4) { realtime realtimeDeparture scheduledDeparture departureDelay serviceDay headsign trip { route { shortName } } } } }`
+            query: '{ stop(id: "HSL:1491171") { stoptimesWithoutPatterns(numberOfDepartures: 4) { realtime realtimeDeparture scheduledDeparture departureDelay serviceDay headsign trip { route { shortName } } } } }'
           })
         });
         const json = await res.json();
-        const list = json.data?.stop?.stoptimesWithoutPatterns || [];
+        const list = json.data && json.data.stop && json.data.stop.stoptimesWithoutPatterns ? json.data.stop.stoptimesWithoutPatterns : [];
 
         if (list.length === 0) {
           document.getElementById('departures').innerHTML = '<div class="note">No departures</div>';
@@ -529,18 +500,14 @@
         }
 
         let html = '';
-        list.forEach(st => {
+        list.forEach(function(st) {
           const secs = st.realtime ? st.realtimeDeparture : st.scheduledDeparture;
           const time = new Date((st.serviceDay + secs) * 1000);
           let t = time.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
           const delay = Math.round((st.departureDelay || 0) / 60);
-          if (delay >= 1) t += ` <span style="color:#ff6b6b">(+${delay})</span>`;
-
-          html += `<div class="departure">
-            <span class="line">${st.trip?.route?.shortName || '?'}</span>
-            <span>${st.headsign || ''}</span>
-            <span>${t}</span>
-          </div>`;
+          if (delay >= 1) t += ' <span style="color:#ff6b6b">(+' + delay + ')</span>';
+          const line = st.trip && st.trip.route && st.trip.route.shortName ? st.trip.route.shortName : '?';
+          html += '<div class="departure"><span class="line">' + line + '</span><span>' + (st.headsign || '') + '</span><span>' + t + '</span></div>';
         });
         document.getElementById('departures').innerHTML = html;
       } catch (e) {
